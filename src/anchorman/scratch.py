@@ -1,6 +1,9 @@
 import pathlib
 
 from terra_sdk.client.lcd import LCDClient
+from terra_sdk.core import Dec
+from terra_sdk.core.coin import Coin
+
 from terra_sdk.key.mnemonic import MnemonicKey
 
 BALANCE_DIVISOR = 1e6
@@ -70,28 +73,42 @@ PUBLIC_NODE_URLS = {
 }
 
 
-def get_wallet_using_mnemonic_in_file(
-    mnem_fpath,
-):
+def mnem_key_from_file(mnem_fpath):
     with open(mnem_fpath) as f:
         this_mnem = f.readline()
-    mnem_key = MnemonicKey(mnemonic=this_mnem)
-    return lcd.wallet(mnem_key)
+
+    return MnemonicKey(mnemonic=this_mnem)
 
 
-def amount_deposited_in_earn(lcd, aTerra, account_address):
+def amount_deposited_in_earn(lcd, chain_id, account_address):
     result = lcd.wasm.contract_query(
-        aTerra,
+        CONTRACT_ADDRESSES[chain_id]["aTerra"],
         {
             "balance": {
                 "address": account_address,
-            }
+            },
         },
     )
 
-    print(result)
+    return Coin("uusd", Dec(result["balance"])).div(BALANCE_DIVISOR)
 
-    return float(result["balance"]) / BALANCE_DIVISOR
+
+def amount_deposited_in_borrow(lcd, chain_id, account_address):
+    result = lcd.wasm.contract_query(
+        CONTRACT_ADDRESSES[chain_id]["mmOverseer"],
+        {
+            "collaterals": {
+                "borrower": account_address,
+            },
+        },
+    )
+
+    if result["collaterals"][0][0] == "terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x":
+        denom = "ubluna"
+    else:
+        raise ValueError("Unsupported collateral token")
+
+    return Coin(denom, Dec(result["collaterals"][0][1])).div(BALANCE_DIVISOR)
 
 
 if __name__ == "__main__":
@@ -102,11 +119,23 @@ if __name__ == "__main__":
     aTerra_contract = CONTRACT_ADDRESSES[chain_id]["aTerra"]
 
     mnem_path = ROOT / "mnemonic.txt"
-    wallet = get_wallet_using_mnemonic_in_file(mnem_path)
+    mnem_key = mnem_key_from_file(mnem_path)
 
-    balance = lcd.bank.balance(address=wallet.key.acc_address)
-    print(f"Balance: {balance}")  # TODO: Pretty print (div()) ?
+    wallet = lcd.wallet(mnem_key)
 
-    print(
-        f"Deposited balance: {amount_deposited_in_earn(lcd, aTerra_contract, wallet.key.acc_address)}uusd"
-    )  # TODO: Convert to terra_sdk.core.coin.Coin
+    balance = (
+        lcd.bank.balance(address=wallet.key.acc_address)
+        .to_dec_coins()
+        .div(BALANCE_DIVISOR)
+    )
+    print(f"Balances (all denoms): {balance}")
+
+    amount_in_earn = amount_deposited_in_earn(lcd, chain_id, wallet.key.acc_address)
+    print(f"UST deposited in earn: {amount_in_earn}")
+
+    total_collateral_in_borrow = amount_deposited_in_borrow(
+        lcd, chain_id, wallet.key.acc_address
+    )
+    print(f"bLuna deposited in borrow: {total_collateral_in_borrow}")
+
+    # luna_bluna_exch_rate =
