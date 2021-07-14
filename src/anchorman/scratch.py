@@ -112,7 +112,6 @@ def amount_deposited_in_borrow(lcd, chain_id, account_address):
 
 
 if __name__ == "__main__":
-
     chain_id = "tequila-0004"  # testnet (for now)
     lcd = LCDClient(chain_id=chain_id, url=PUBLIC_NODE_URLS[chain_id])
 
@@ -138,4 +137,34 @@ if __name__ == "__main__":
     )
     print(f"bLuna deposited in borrow: {total_collateral_in_borrow}")
 
-    # luna_bluna_exch_rate =
+    total_collateral_in_borrow_equiv_luna = Coin(
+        denom="uluna", amount=int(total_collateral_in_borrow.amount * BALANCE_DIVISOR)
+    )
+    print(
+        f"bLuna deposited in borrow in equiv microLuna: {total_collateral_in_borrow_equiv_luna}"
+    )  # Assume 1:1 price for Luna / bLuna
+
+    total_collateral_in_borrow_equiv_ust = (
+        lcd.market.swap_rate(total_collateral_in_borrow_equiv_luna, "uusd")
+        .to_dec_coin()
+        .div(BALANCE_DIVISOR)
+    )
+
+    # This gives a value appriox 0.5% lower than value quoted on WebApp. Appears to be due to
+    # lower price of Luna quoted by lcd.market.,swap_rate() than price of bLuna quoted in
+    # https://app.anchorprotocol.com/borrow
+    #
+    # Use Terraswap instead? Unclear how Anchor calculatres price of bLuna..
+    #
+    # The 1:1 Luna/bLuna price assumption appears NOT to be the cause of this discrepancy, since:
+    # - Anchor's burn module quotes a price difference of 0.0007% (essentially equal)
+    # - Anchor's INSTANT burn module quotes a 1.52% price difference (3 × observed differeence)
+    # - Terraswap bLuna/Luna price matches Anchor's instant burn
+
+    print(
+        f"bLuna deposited in borrow in equiv UST: {total_collateral_in_borrow_equiv_ust}"
+    )
+
+    # TODO: debug or adopt approach in https://github.com/jonnyli1125/terraswap-monitor/blob/main/terraswap.py ?
+
+    # Is 0.5% good enough for managing liquidations? Want confidence that this is an unchanging discrepancy...
