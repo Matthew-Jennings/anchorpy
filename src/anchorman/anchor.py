@@ -1,12 +1,12 @@
 import pathlib
 
-# from terra_sdk.client.lcd import LCDClient
+from terra_sdk.client.lcd import LCDClient
 from terra_sdk.core import Dec
 from terra_sdk.core.coin import Coin
+from terra_sdk.core.coins import Coins
 
 from terra_sdk.key.mnemonic import MnemonicKey
 
-BALANCE_DIVISOR = 1e6
 HERE = pathlib.Path(__file__).parent.resolve()
 ROOT = HERE.parent.parent
 
@@ -73,39 +73,57 @@ PUBLIC_NODE_URLS = {
 }
 
 
+class Anchor:
+    def __init__(self, lcd, account_address):
+        self.lcd = lcd
+        self.account_address = account_address
+
+    @property
+    def balance(self) -> Coins:
+        """[summary]
+
+        Returns:
+            Coins: [description]
+        """
+        return self.lcd.bank.balance(address=self.account_address).to_dec_coins()
+
+    @property
+    def earn_balance(self) -> Coin:
+        result = self.lcd.wasm.contract_query(
+            CONTRACT_ADDRESSES[self.lcd.chain_id]["aTerra"],
+            {
+                "balance": {
+                    "address": self.account_address,
+                },
+            },
+        )
+
+        return Coin("uusd", Dec(result["balance"]))
+
+    @property
+    def borrow_collateral_balance(self) -> Coin:
+        result = self.lcd.wasm.contract_query(
+            CONTRACT_ADDRESSES[self.lcd.chain_id]["mmOverseer"],
+            {
+                "collaterals": {
+                    "borrower": self.account_address,
+                },
+            },
+        )
+
+        if (
+            result["collaterals"][0][0]
+            == "terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x"
+        ):
+            denom = "ubluna"
+        else:
+            raise ValueError("Unsupported collateral token")
+
+        return Coin(denom, Dec(result["collaterals"][0][1]))
+
+
 def mnem_key_from_file(mnem_fpath):
     with open(mnem_fpath) as f:
         this_mnem = f.readline()
 
     return MnemonicKey(mnemonic=this_mnem)
-
-
-def amount_deposited_in_earn(lcd, chain_id, account_address):
-    result = lcd.wasm.contract_query(
-        CONTRACT_ADDRESSES[chain_id]["aTerra"],
-        {
-            "balance": {
-                "address": account_address,
-            },
-        },
-    )
-
-    return Coin("uusd", Dec(result["balance"])).div(BALANCE_DIVISOR)
-
-
-def amount_deposited_in_borrow(lcd, chain_id, account_address):
-    result = lcd.wasm.contract_query(
-        CONTRACT_ADDRESSES[chain_id]["mmOverseer"],
-        {
-            "collaterals": {
-                "borrower": account_address,
-            },
-        },
-    )
-
-    if result["collaterals"][0][0] == "terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x":
-        denom = "ubluna"
-    else:
-        raise ValueError("Unsupported collateral token")
-
-    return Coin(denom, Dec(result["collaterals"][0][1])).div(BALANCE_DIVISOR)

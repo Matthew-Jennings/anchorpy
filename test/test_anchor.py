@@ -5,9 +5,9 @@ from terra_sdk.core import Dec
 from terra_sdk.core.coin import Coin
 
 from anchorman.anchor import (
-    amount_deposited_in_earn,
-    PUBLIC_NODE_URLS,
+    Anchor,
     mnem_key_from_file,
+    PUBLIC_NODE_URLS,
 )
 
 HERE = pathlib.Path(__file__).parent.resolve()
@@ -19,11 +19,19 @@ MNEM_PATH_TEST = ROOT / "mnemonic.txt"
 WALLET_TEST = LCD_TEST.wallet(mnem_key_from_file(MNEM_PATH_TEST))
 
 
-def test_amount_deposited_in_earn():
-    EXPECTED_AMOUNT_IN_EARN = Coin("uusd", Dec(1597.783021))
+def test_anchor():
+    """[summary]"""
 
-    amount_in_earn = amount_deposited_in_earn(
-        LCD_TEST, CHAIN_ID_TESTNET, WALLET_TEST.key.acc_address
-    )
+    anchor_test = Anchor(LCD_TEST, WALLET_TEST.key.acc_address)
 
-    assert amount_in_earn == EXPECTED_AMOUNT_IN_EARN
+    # BALANCE_EXPECTED =
+    print(anchor_test.balance)
+    print(type(anchor_test.balance))
+
+    print(anchor_test.earn_balance)
+    EARN_BALANCE_EXPECTED = Coin("uusd", Dec(1597783021))
+    assert anchor_test.earn_balance == EARN_BALANCE_EXPECTED
+
+    print(anchor_test.borrow_collateral_balance)
+    BORROW_COLLATERAL_BALANCE_EXPECTED = Coin("ubluna", Dec(358245650))
+    assert BORROW_COLLATERAL_BALANCE_EXPECTED == anchor_test.borrow_collateral_balance
