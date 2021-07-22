@@ -3,9 +3,6 @@ import pathlib
 from terra_sdk.core import coin, coins, Dec
 from terra_sdk.key import mnemonic
 
-HERE = pathlib.Path(__file__).parent.resolve()
-ROOT = HERE.parent.parent
-
 CONTRACT_ADDRESSES = {
     "columbus-4": {
         "bLunaHub": "terra1mtwph2juhj0rvjz7dy92gvl6xvukaxu8rfv8ts",
@@ -76,11 +73,6 @@ class Anchor:
 
     @property
     def balance(self) -> coins.Coins:
-        """[summary]
-
-        Returns:
-            Coins: [description]
-        """
         return self.lcd.bank.balance(address=self.account_address).to_dec_coins()
 
     @property
@@ -133,6 +125,9 @@ def mnem_key_from_file(mnem_fpath):
 
 
 def uaust_to_uusd(lcd, offer_coin):
+
+    if not offer_coin.denom == "uaust":
+        raise ValueError("`offer_coin` denom must be 'uaust'")
 
     exchange_rate = lcd.wasm.contract_query(
         CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
