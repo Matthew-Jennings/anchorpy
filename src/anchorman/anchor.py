@@ -1,9 +1,7 @@
 import pathlib
 
-from terra_sdk.client import lcd
 from terra_sdk.core import coin, coins, Dec
-
-from terra_sdk.key.mnemonic import MnemonicKey
+from terra_sdk.key import mnemonic
 
 HERE = pathlib.Path(__file__).parent.resolve()
 ROOT = HERE.parent.parent
@@ -131,7 +129,7 @@ def mnem_key_from_file(mnem_fpath):
     with open(mnem_fpath) as f:
         this_mnem = f.readline()
 
-    return MnemonicKey(mnemonic=this_mnem)
+    return mnemonic.MnemonicKey(mnemonic=this_mnem)
 
 
 def uaust_to_uusd(lcd, offer_coin):

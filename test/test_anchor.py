@@ -1,8 +1,7 @@
 import pathlib
 
-from terra_sdk.client.lcd import LCDClient
-from terra_sdk.core import Dec
-from terra_sdk.core import coin, coins
+from terra_sdk.client import lcd
+from terra_sdk.core import coin, coins, Dec
 
 from anchorman import anchor
 
@@ -10,7 +9,7 @@ HERE = pathlib.Path(__file__).parent.resolve()
 ROOT = HERE.parent
 
 CHAIN_ID_TESTNET = "tequila-0004"
-LCD_TEST = LCDClient(
+LCD_TEST = lcd.LCDClient(
     chain_id=CHAIN_ID_TESTNET, url=anchor.PUBLIC_NODE_URLS[CHAIN_ID_TESTNET]
 )
 MNEM_PATH_TEST = ROOT / "mnemonic.txt"
