@@ -40,12 +40,7 @@ def test_okay_to_use_int_for_uluna():
     # swap_rate() returns int, so supply with 1e6 uluna (1 luna) for
     # better exchange rate precision
     uusd_coin_per_luna = LCD_TEST.market.swap_rate(coin.Coin("uluna", int(1e6)), "uusd")
-    print(uusd_coin_per_luna)
-
     uusd_per_uluna = uusd_coin_per_luna.amount / 1e6
-    print(uusd_per_uluna)
-
     uusd_cents_per_uluna = uusd_per_uluna * 100
-    print(uusd_cents_per_uluna)
 
     assert uusd_cents_per_uluna > 1
