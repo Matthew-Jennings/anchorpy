@@ -1,5 +1,3 @@
-import pathlib
-
 from terra_sdk.core import coin, coins, Dec
 from terra_sdk.key import mnemonic
 
