@@ -86,7 +86,7 @@ class Anchor:
         return self.lcd.bank.balance(address=self.account_address).to_dec_coins()
 
     @property
-    def earn_balance(self) -> coin.Coin:
+    def earn_balance_uaust(self) -> coin.Coin:
         result = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["aTerra"],
             {
@@ -96,7 +96,11 @@ class Anchor:
             },
         )
 
-        return coin.Coin("uusd", Dec(result["balance"]))
+        return coin.Coin("uaust", result["balance"])
+
+    @property
+    def earn_balance_uusd(self) -> coin.Coin:
+        return uaust_to_uusd(self.lcd, self.earn_balance_uaust)
 
     @property
     def borrow_collateral_balance(self) -> coin.Coin:
@@ -125,3 +129,12 @@ def mnem_key_from_file(mnem_fpath):
         this_mnem = f.readline()
 
     return MnemonicKey(mnemonic=this_mnem)
+
+
+def uaust_to_uusd(lcd, offer_coin):
+
+    exchange_rate = lcd.wasm.contract_query(
+        CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
+    )["exchange_rate"]
+
+    return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))

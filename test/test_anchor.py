@@ -18,17 +18,19 @@ WALLET_TEST = LCD_TEST.wallet(anchor.mnem_key_from_file(MNEM_PATH_TEST))
 
 
 def test_anchor():
-    """[summary]"""
-
     anchor_test = anchor.Anchor(LCD_TEST, WALLET_TEST.key.acc_address)
 
     # BALANCE_EXPECTED =
     print(anchor_test.balance)
     print(type(anchor_test.balance))
 
-    print(anchor_test.earn_balance)
-    EARN_BALANCE_EXPECTED = coin.Coin("uusd", Dec(1597783021))
-    assert anchor_test.earn_balance == EARN_BALANCE_EXPECTED
+    print(anchor_test.earn_balance_uaust)
+    EARN_BALANCE_UAUST_EXPECTED = coin.Coin("uaust", 1597783021)
+    assert anchor_test.earn_balance_uaust == EARN_BALANCE_UAUST_EXPECTED
+
+    print(anchor_test.earn_balance_uusd)
+    EARN_BALANCE_UUSD_EXPECTED = coin.Coin("uusd", 1718938303)
+    assert anchor_test.earn_balance_uusd > EARN_BALANCE_UUSD_EXPECTED
 
     print(anchor_test.borrow_collateral_balance)
     BORROW_COLLATERAL_BALANCE_EXPECTED = coin.Coin("ubluna", Dec(358245650))
