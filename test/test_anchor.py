@@ -30,4 +30,22 @@ def test_anchor():
     assert anchor_test.earn_balance_uusd > EARN_BALANCE_UUSD_EXPECTED
 
     BORROW_COLLATERAL_BALANCE_EXPECTED = coin.Coin("ubluna", Dec(358245650))
-    assert BORROW_COLLATERAL_BALANCE_EXPECTED == anchor_test.borrow_collateral_balance
+    assert anchor_test.borrow_collateral_balance == BORROW_COLLATERAL_BALANCE_EXPECTED
+
+
+def test_okay_to_use_int_for_uluna():
+    """Flag if Luna price reaches high enough value that 1uLuna
+    (1 micro Luna) is worth more than 0.01UST"""
+
+    # swap_rate() returns int, so supply with 1e6 uluna (1 luna) for
+    # better exchange rate precision
+    uusd_coin_per_luna = LCD_TEST.market.swap_rate(coin.Coin("uluna", int(1e6)), "uusd")
+    print(uusd_coin_per_luna)
+
+    uusd_per_uluna = uusd_coin_per_luna.amount / 1e6
+    print(uusd_per_uluna)
+
+    uusd_cents_per_uluna = uusd_per_uluna * 100
+    print(uusd_cents_per_uluna)
+
+    assert uusd_cents_per_uluna > 1
