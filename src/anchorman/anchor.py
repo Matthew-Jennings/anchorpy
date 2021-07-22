@@ -1,9 +1,7 @@
 import pathlib
 
-from terra_sdk.client.lcd import LCDClient
-from terra_sdk.core import Dec
-from terra_sdk.core.coin import Coin
-from terra_sdk.core.coins import Coins
+from terra_sdk.client import lcd
+from terra_sdk.core import coin, coins, Dec
 
 from terra_sdk.key.mnemonic import MnemonicKey
 
@@ -79,7 +77,7 @@ class Anchor:
         self.account_address = account_address
 
     @property
-    def balance(self) -> Coins:
+    def balance(self) -> coins.Coins:
         """[summary]
 
         Returns:
@@ -88,7 +86,7 @@ class Anchor:
         return self.lcd.bank.balance(address=self.account_address).to_dec_coins()
 
     @property
-    def earn_balance(self) -> Coin:
+    def earn_balance(self) -> coin.Coin:
         result = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["aTerra"],
             {
@@ -98,10 +96,10 @@ class Anchor:
             },
         )
 
-        return Coin("uusd", Dec(result["balance"]))
+        return coin.Coin("uusd", Dec(result["balance"]))
 
     @property
-    def borrow_collateral_balance(self) -> Coin:
+    def borrow_collateral_balance(self) -> coin.Coin:
         result = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["mmOverseer"],
             {
@@ -119,7 +117,7 @@ class Anchor:
         else:
             raise ValueError("Unsupported collateral token")
 
-        return Coin(denom, Dec(result["collaterals"][0][1]))
+        return coin.Coin(denom, Dec(result["collaterals"][0][1]))
 
 
 def mnem_key_from_file(mnem_fpath):
