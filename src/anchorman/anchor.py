@@ -113,6 +113,9 @@ class Anchor:
             },
         )
 
+        if len(result["collaterals"]) > 1:
+            raise ValueError("Only a single collateral amount is supported")
+
         if (
             result["collaterals"][0][0]
             == "terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x"
