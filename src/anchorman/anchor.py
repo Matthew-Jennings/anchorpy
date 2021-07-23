@@ -75,6 +75,8 @@ class Anchor:
     def balance(self) -> coins.Coins:
         return self.lcd.bank.balance(address=self.account_address).to_dec_coins()
 
+    # Anchor Earn
+
     @property
     def earn_balance_uaust(self) -> coin.Coin:
         result = self.lcd.wasm.contract_query(
@@ -88,8 +90,6 @@ class Anchor:
 
         return coin.Coin("uaust", result["balance"])
 
-    # Anchor Earn
-
     @property
     def earn_balance_uusd(self) -> coin.Coin:
         return uaust_to_uusd(self.lcd, self.earn_balance_uaust)
@@ -98,34 +98,23 @@ class Anchor:
 
     @property
     def borrow_collateral_balance_ubluna(self) -> coin.Coin:
-        result = self.lcd.wasm.contract_query(
-            CONTRACT_ADDRESSES[self.lcd.chain_id]["mmOverseer"],
+        amount = self.lcd.wasm.contract_query(
+            CONTRACT_ADDRESSES[self.lcd.chain_id]["mmCustody"],
             {
-                "collaterals": {
-                    "borrower": self.account_address,
+                "borrower": {
+                    "address": self.account_address,
                 },
             },
-        )
+        )["balance"]
 
-        if len(result["collaterals"]) > 1:
-            raise ValueError("Only a single collateral amount is supported")
-
-        if (
-            result["collaterals"][0][0]
-            == CONTRACT_ADDRESSES[self.lcd.chain_id]["bLunaToken"]
-        ):
-            denom = "ubluna"
-        else:
-            raise ValueError("Unsupported collateral token")
-
-        return coin.Coin(denom, Dec(result["collaterals"][0][1]))
+        return coin.Coin("ubluna", Dec(amount))
 
     @property
     def borrow_collateral_balance_uusd(self) -> coin.Coin:
         return ubluna_to_uusd(self.lcd, self.borrow_collateral_balance_ubluna)
 
     @property
-    def borrow_loan_amount(self) -> coin.Coin:
+    def borrow_loan_principal(self) -> coin.Coin:
         amount = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
             {
@@ -138,9 +127,58 @@ class Anchor:
         return coin.Coin("uusd", amount)
 
     @property
+    def borrow_loan_principal_and_interest(self) -> coin.Coin:
+        market_state = self.lcd.wasm.contract_query(
+            CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
+            {
+                "state": {},
+            },
+        )
+
+        borrower_interest_idx = Dec(
+            self.lcd.wasm.contract_query(
+                CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
+                {
+                    "borrower_info": {"borrower": self.account_address},
+                },
+            )["interest_index"]
+        )
+
+        borrow_rate = Dec(
+            self.lcd.wasm.contract_query(
+                CONTRACT_ADDRESSES[self.lcd.chain_id]["mmInterestModel"],
+                {
+                    "borrow_rate": {
+                        "market_balance": "",
+                        "total_reserves": "",
+                        "total_liabilities": "",
+                    },
+                },
+            )["rate"]
+        )
+
+        current_block_height = int(
+            self.lcd.tendermint.block_info()["block"]["header"]["height"]
+        )
+
+        blocks_since_interest_last_accrued = (
+            current_block_height - market_state["last_interest_updated"]
+        )
+
+        return self.borrow_loan_principal.mul(
+            Dec(market_state["global_interest_index"]).mul(
+                borrow_rate.mul(blocks_since_interest_last_accrued).add(1)
+            )
+        ).div(borrower_interest_idx)
+
+    @property
+    def borrow_loan_interest_charged(self) -> coin.Coin:
+        return self.borrow_loan_principal_and_interest.sub(self.borrow_loan_principal)
+
+    @property
     def borrow_ltv(self) -> float:
         return (
-            self.borrow_loan_amount.to_dec_coin().amount
+            self.borrow_loan_principal_and_interest.to_dec_coin().amount
             / self.borrow_collateral_balance_uusd.to_dec_coin().amount
         )
 
