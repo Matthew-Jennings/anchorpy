@@ -32,6 +32,14 @@ def test_anchor():
     assert anchor_test.borrow_collateral_balance == BORROW_COLLATERAL_BALANCE_EXPECTED
 
 
+def test_ubluna_to_uusd():
+    ubluna_coin_to_exchange = coin.Coin("ubluna", int(1e6))
+
+    uusd_received = anchor.ubluna_to_uusd(LCD_TEST, ubluna_coin_to_exchange)
+
+    print(uusd_received)
+
+
 def test_okay_to_use_int_for_uluna():
     """Flag if Luna price reaches high enough value that 1uLuna
     (1 micro Luna) is worth more than 0.01UST"""

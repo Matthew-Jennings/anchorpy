@@ -7,7 +7,7 @@ setup(
     author_email="Centrus.007@gmail.com",
     packages=["anchorman"],
     package_dir={"": "src"},
-    scripts=[],
+    scripts=["scripts/print_anchor"],
     url="",
     license="LICENSE.txt",
     description="",

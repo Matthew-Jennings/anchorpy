@@ -69,6 +69,8 @@ class Anchor:
         self.lcd = lcd
         self.account_address = account_address
 
+    # Wallet
+
     @property
     def balance(self) -> coins.Coins:
         return self.lcd.bank.balance(address=self.account_address).to_dec_coins()
@@ -86,12 +88,16 @@ class Anchor:
 
         return coin.Coin("uaust", result["balance"])
 
+    # Anchor Earn
+
     @property
     def earn_balance_uusd(self) -> coin.Coin:
         return uaust_to_uusd(self.lcd, self.earn_balance_uaust)
 
+    # Anchor Borrow
+
     @property
-    def borrow_collateral_balance(self) -> coin.Coin:
+    def borrow_collateral_balance_ubluna(self) -> coin.Coin:
         result = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["mmOverseer"],
             {
@@ -106,13 +112,37 @@ class Anchor:
 
         if (
             result["collaterals"][0][0]
-            == "terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x"
+            == CONTRACT_ADDRESSES[self.lcd.chain_id]["bLunaToken"]
         ):
             denom = "ubluna"
         else:
             raise ValueError("Unsupported collateral token")
 
         return coin.Coin(denom, Dec(result["collaterals"][0][1]))
+
+    @property
+    def borrow_collateral_balance_uusd(self) -> coin.Coin:
+        return ubluna_to_uusd(self.lcd, self.borrow_collateral_balance_ubluna)
+
+    @property
+    def borrow_loan_amount(self) -> coin.Coin:
+        amount = self.lcd.wasm.contract_query(
+            CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
+            {
+                "borrower_info": {
+                    "borrower": self.account_address,
+                },
+            },
+        )["loan_amount"]
+
+        return coin.Coin("uusd", amount)
+
+    @property
+    def borrow_ltv(self) -> float:
+        return (
+            self.borrow_loan_amount.to_dec_coin().amount
+            / self.borrow_collateral_balance_uusd.to_dec_coin().amount
+        )
 
 
 def mnem_key_from_file(mnem_fpath):
@@ -130,5 +160,23 @@ def uaust_to_uusd(lcd, offer_coin):
     exchange_rate = lcd.wasm.contract_query(
         CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
     )["exchange_rate"]
+
+    return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
+
+
+def ubluna_to_uusd(lcd, offer_coin):
+
+    if not offer_coin.denom == "ubluna":
+        raise ValueError("`offer_coin` denom must be 'ubluna'")
+
+    exchange_rate = lcd.wasm.contract_query(
+        CONTRACT_ADDRESSES[lcd.chain_id]["mmOracle"],
+        {
+            "price": {
+                "base": CONTRACT_ADDRESSES[lcd.chain_id]["bLunaToken"],
+                "quote": "uusd",
+            },
+        },
+    )["rate"]
 
     return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
