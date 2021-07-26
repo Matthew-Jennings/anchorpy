@@ -1,2 +1,8 @@
-# anchorman
-Automatically manages the Borrow and Earn functions of Anchor Protocol to optimise earnings and lower the risk of liquidations.
+# anchorpy
+
+## Still in development.
+
+- Provides a user-friendly python interface for [Anchor-Protocol](https://app.anchorprotocol.com/) activities.
+- Will includes a useful tool for automatically managing Earn and Borrow to, for example, help avoid liquidations. 
+
+
