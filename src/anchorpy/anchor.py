@@ -183,12 +183,26 @@ class Anchor:
         )
 
     def __str__(self):
+
+        balance_str = "\n".join(
+            ["\t{}".format(coin_to_human_str(coin)) for coin in self.balance]
+        )
+
         return f"""
-Anchor(
-    Account address:\t{self.account_address}
+Anchor details for address: {self.account_address}
     
-    Bank balances:{"hi"}
-)"""
+    Bank balances:
+    {balance_str}
+
+    Total deposit:
+    \t{coin_to_human_str(self.earn_balance_uaust)} ({coin_to_human_str(self.earn_balance_uusd)})
+
+    Total collateral:
+    \t{coin_to_human_str(self.borrow_collateral_balance_ubluna)} ({coin_to_human_str(self.borrow_collateral_balance_uusd)})
+
+    Total owing:
+    \t{coin_to_human_str(self.borrow_loan_principal_and_interest)}
+"""
 
 
 def mnem_key_from_file(mnem_fpath):
@@ -228,12 +242,12 @@ def ubluna_to_uusd(lcd, offer_coin):
     return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
 
 
-def pretty_format_coins(coins):
+def coin_to_human_str(in_coin):
     DENOMS_TO_HUMAN = {
         "uusd": "UST",
-        "aust": "aUST",
+        "uaust": "aUST",
         "uluna": "Luna",
         "ubluna": "bLuna",
     }
 
-    return ["f{Dec(coin.amount.div(1e6))} {DENOMS_TO_HUMAN[coin.denom]} "]
+    return f"{float(Dec(in_coin.amount).div(1e6)):.4f} {DENOMS_TO_HUMAN[in_coin.denom]}"
