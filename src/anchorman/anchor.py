@@ -182,6 +182,14 @@ class Anchor:
             / self.borrow_collateral_balance_uusd.to_dec_coin().amount
         )
 
+    def __str__(self):
+        return f"""
+Anchor(
+    Account address:\t{self.account_address}
+    
+    Bank balances:{"hi"}
+)"""
+
 
 def mnem_key_from_file(mnem_fpath):
     with open(mnem_fpath) as f:
@@ -218,3 +226,14 @@ def ubluna_to_uusd(lcd, offer_coin):
     )["rate"]
 
     return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
+
+
+def pretty_format_coins(coins):
+    DENOMS_TO_HUMAN = {
+        "uusd": "UST",
+        "aust": "aUST",
+        "uluna": "Luna",
+        "ubluna": "bLuna",
+    }
+
+    return ["f{Dec(coin.amount.div(1e6))} {DENOMS_TO_HUMAN[coin.denom]} "]

@@ -18,10 +18,4 @@ if __name__ == "__main__":
 
     this_anc = anchor.Anchor(LCD, WALLET.key.acc_address)
 
-    dump = [
-        member
-        for member in inspect.getmembers(this_anc)
-        if not member[0].startswith("_")
-    ]
-
-    pprint.pprint(dump)
+    pprint.pprint(anchor.print(this_anc))
