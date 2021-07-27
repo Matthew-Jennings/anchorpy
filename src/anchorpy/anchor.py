@@ -195,10 +195,10 @@ Anchor details for address: {self.account_address}
     {balance_str}
 
     Total deposit:
-    \t{coin_to_human_str(self.total_deposit_uaust)} ({coin_to_human_str(self.total_deposit)})
+    \t{coin_to_human_str(self.total_deposit)} ({coin_to_human_str(self.total_deposit_uaust)})
 
     Total collateral:
-    \t{coin_to_human_str(self.total_collateral_ubluna)} ({coin_to_human_str(self.total_collateral)})
+    \t{coin_to_human_str(self.total_collateral)} ({coin_to_human_str(self.total_collateral_ubluna)})
 
     Total owing:
     \t{coin_to_human_str(self.total_owing)}
@@ -213,6 +213,34 @@ def mnem_key_from_file(mnem_fpath):
         this_mnem = f.readline()
 
     return mnemonic.MnemonicKey(mnemonic=this_mnem)
+
+
+def uanc_to_uusd(lcd, offer_coin):
+
+    if not offer_coin.denom == "uanc":
+        raise ValueError("`offer_coin` denom must be 'uanc'")
+
+    exchange_rate = Dec(
+        lcd.wasm.contract_query(
+            CONTRACT_ADDRESSES[lcd.chain_id]["terraswapAncUstPair"],
+            {
+                "simulation": {
+                    "offer_asset": {
+                        "amount": str(int(1e6)),
+                        "info": {
+                            "token": {
+                                "contract_addr": CONTRACT_ADDRESSES[lcd.chain_id][
+                                    "ANC"
+                                ],
+                            }
+                        },
+                    }
+                }
+            },
+        )["return_amount"]
+    ).div(1e6)
+
+    return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
 
 
 def uaust_to_uusd(lcd, offer_coin):
@@ -251,6 +279,7 @@ def coin_to_human_str(in_coin):
         "uaust": "aUST",
         "uluna": "Luna",
         "ubluna": "bLuna",
+        "uanc": "ANC",
     }
 
     return (

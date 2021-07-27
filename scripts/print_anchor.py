@@ -1,12 +1,11 @@
 import pathlib
-import pprint
 
 from terra_sdk.client import lcd
 
 import anchorpy
 
 if __name__ == "__main__":
-    CHAIN_ID = "tequila-0004"
+    CHAIN_ID = "columbus-4"
 
     HERE = pathlib.Path(__file__).parent.resolve()
     ROOT = HERE.parent
