@@ -1,3 +1,5 @@
+import base64
+
 from terra_sdk.core import auth, coin, coins, Dec, wasm
 from terra_sdk.key import mnemonic
 
@@ -34,6 +36,40 @@ class Anchor:
     @property
     def total_deposit(self) -> coin.Coin:
         return exchange.uaust_to_uusd(self.lcd, self.total_deposit_uaust)
+
+    def withdraw_uusd_from_earn(self, uusd_to_withdraw: coin.Coin) -> coin.Coin:
+        fee_max = self.lcd.treasury.tax_cap("uusd").to_int_coin()
+
+        # print(fee_max)
+        # print()
+
+        withdraw_exec_msg = {
+            "send": {
+                "contract": settings.CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
+                "amount": str(int(uusd_to_withdraw.add(fee_max).amount)),
+                "msg": encode_hook_msg("redeem_stable"),
+            }
+        }
+
+        # print(withdraw_exec_msg)
+        # print()
+
+        exec = (
+            wasm.MsgExecuteContract(
+                sender=self.account_address,
+                contract=settings.CONTRACT_ADDRESSES[self.lcd.chain_id]["aTerra"],
+                execute_msg=withdraw_exec_msg,
+            ),
+        )
+
+        # print(exec)
+        # print()
+
+        fee = str(int(fee_max.amount) + 250000) + "uusd"
+        sendtx = self.wallet.create_and_sign_tx(exec, fee=auth.StdFee(1000000, fee))
+        result = self.lcd.tx.broadcast(sendtx)
+
+        return result
 
     # Anchor Borrow
 
@@ -162,9 +198,20 @@ def coin_to_human_str(in_coin):
         "uaust": "aUST",
         "uluna": "Luna",
         "ubluna": "bLuna",
+        "ukrw": "KRT",
+        "usdr": "SDT",
+        "ubluna": "bLuna",
         "uanc": "ANC",
     }
 
     return (
         f"{float(Dec(in_coin.amount).div(1e6)):,.4f} {DENOMS_TO_HUMAN[in_coin.denom]}"
     )
+
+
+def encode_hook_msg(key_str_to_encode):
+
+    # MUST have double quotes enclosing `key_str_to_encode`
+    msg_to_encode = f'{{"{key_str_to_encode}":{{}}}}'
+
+    return base64.b64encode(bytes(msg_to_encode, "utf-8")).decode("utf-8")

@@ -1,4 +1,5 @@
 import pathlib
+import pprint
 
 from terra_sdk.client import lcd
 from terra_sdk.core import coin, coins, Dec
@@ -12,8 +13,8 @@ CHAIN_ID_TESTNET = "tequila-0004"
 LCD_TEST = lcd.LCDClient(
     chain_id=CHAIN_ID_TESTNET, url=anchorpy.settings.PUBLIC_NODE_URLS[CHAIN_ID_TESTNET]
 )
-MNEM_PATH_TEST = ROOT / "mnemonic.txt"
-WALLET_TEST = LCD_TEST.wallet(anchorpy.mnem_key_from_file(MNEM_PATH_TEST))
+MNEM_TEST_PATH = ROOT / "mnemonic.txt"
+WALLET_TEST = LCD_TEST.wallet(anchorpy.mnem_key_from_file(MNEM_TEST_PATH))
 
 
 def test_anchor():
@@ -32,12 +33,18 @@ def test_anchor():
     assert anchor_test.total_collateral_ubluna == BORROW_COLLATERAL_BALANCE_EXPECTED
 
 
+def test_withdraw_from_earn():
+    anchor_test = anchorpy.Anchor(LCD_TEST, WALLET_TEST)
+
+    pprint.pprint(anchor_test.withdraw_uusd_from_earn(coin.Coin("uusd", 1e6)))
+
+
 def test_ubluna_to_uusd():
     ubluna_coin_to_exchange = coin.Coin("ubluna", int(1e6))
 
     uusd_received = anchorpy.ubluna_to_uusd(LCD_TEST, ubluna_coin_to_exchange)
 
-    print(uusd_received)
+    pprint.pprint(uusd_received)
 
 
 def test_okay_to_use_int_for_uluna():
@@ -51,3 +58,7 @@ def test_okay_to_use_int_for_uluna():
     uusd_cents_per_uluna = uusd_per_uluna * 100
 
     assert uusd_cents_per_uluna > 1
+
+
+if __name__ == "__main__":
+    test_withdraw_from_earn()
