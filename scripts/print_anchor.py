@@ -14,6 +14,6 @@ if __name__ == "__main__":
     LCD = lcd.LCDClient(chain_id=CHAIN_ID, url=anchorpy.PUBLIC_NODE_URLS[CHAIN_ID])
     WALLET = LCD.wallet(anchorpy.mnem_key_from_file(MNEM_PATH))
 
-    this_anc = anchorpy.Anchor(LCD, WALLET.key.acc_address)
+    this_anc = anchorpy.Anchor(LCD, WALLET)
 
     print(this_anc)

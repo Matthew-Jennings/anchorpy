@@ -1,6 +1,6 @@
 from terra_sdk.core import coin, Dec
 
-from .anchor import CONTRACT_ADDRESSES
+from . import settings
 
 
 def uanc_to_uusd(lcd, offer_coin):
@@ -10,16 +10,16 @@ def uanc_to_uusd(lcd, offer_coin):
 
     exchange_rate = Dec(
         lcd.wasm.contract_query(
-            CONTRACT_ADDRESSES[lcd.chain_id]["terraswapAncUstPair"],
+            settings.CONTRACT_ADDRESSES[lcd.chain_id]["terraswapAncUstPair"],
             {
                 "simulation": {
                     "offer_asset": {
                         "amount": str(int(1e6)),
                         "info": {
                             "token": {
-                                "contract_addr": CONTRACT_ADDRESSES[lcd.chain_id][
-                                    "ANC"
-                                ],
+                                "contract_addr": settings.CONTRACT_ADDRESSES[
+                                    lcd.chain_id
+                                ]["ANC"],
                             }
                         },
                     }
@@ -37,7 +37,7 @@ def uaust_to_uusd(lcd, offer_coin):
         raise ValueError("`offer_coin` denom must be 'uaust'")
 
     exchange_rate = lcd.wasm.contract_query(
-        CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
+        settings.CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
     )["exchange_rate"]
 
     return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
@@ -49,10 +49,10 @@ def ubluna_to_uusd(lcd, offer_coin):
         raise ValueError("`offer_coin` denom must be 'ubluna'")
 
     exchange_rate = lcd.wasm.contract_query(
-        CONTRACT_ADDRESSES[lcd.chain_id]["mmOracle"],
+        settings.CONTRACT_ADDRESSES[lcd.chain_id]["mmOracle"],
         {
             "price": {
-                "base": CONTRACT_ADDRESSES[lcd.chain_id]["bLunaToken"],
+                "base": settings.CONTRACT_ADDRESSES[lcd.chain_id]["bLunaToken"],
                 "quote": "uusd",
             },
         },
