@@ -22,17 +22,14 @@ def test_anchor():
     BALANCE_EXPECTED = coins.Coins.from_str("3727582uluna,6489712uusd")
     assert anchor_test.balance == BALANCE_EXPECTED
 
-    EARN_BALANCE_UAUST_EXPECTED = coin.Coin("uaust", 1597783021)
-    assert anchor_test.earn_balance_uaust == EARN_BALANCE_UAUST_EXPECTED
+    total_deposit_uaust_EXPECTED = coin.Coin("uaust", 1597783021)
+    assert anchor_test.total_deposit_uaust == total_deposit_uaust_EXPECTED
 
     EARN_BALANCE_UUSD_EXPECTED = coin.Coin("uusd", 1718938303)
-    assert anchor_test.earn_balance_uusd > EARN_BALANCE_UUSD_EXPECTED
+    assert anchor_test.total_deposit > EARN_BALANCE_UUSD_EXPECTED
 
     BORROW_COLLATERAL_BALANCE_EXPECTED = coin.Coin("ubluna", Dec(358245650))
-    assert (
-        anchor_test.borrow_collateral_balance_ubluna
-        == BORROW_COLLATERAL_BALANCE_EXPECTED
-    )
+    assert anchor_test.total_collateral_ubluna == BORROW_COLLATERAL_BALANCE_EXPECTED
 
 
 def test_ubluna_to_uusd():

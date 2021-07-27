@@ -78,7 +78,7 @@ class Anchor:
     # Anchor Earn
 
     @property
-    def earn_balance_uaust(self) -> coin.Coin:
+    def total_deposit_uaust(self) -> coin.Coin:
         result = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["aTerra"],
             {
@@ -91,13 +91,13 @@ class Anchor:
         return coin.Coin("uaust", result["balance"])
 
     @property
-    def earn_balance_uusd(self) -> coin.Coin:
-        return uaust_to_uusd(self.lcd, self.earn_balance_uaust)
+    def total_deposit(self) -> coin.Coin:
+        return uaust_to_uusd(self.lcd, self.total_deposit_uaust)
 
     # Anchor Borrow
 
     @property
-    def borrow_collateral_balance_ubluna(self) -> coin.Coin:
+    def total_collateral_ubluna(self) -> coin.Coin:
         amount = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["mmCustody"],
             {
@@ -110,11 +110,11 @@ class Anchor:
         return coin.Coin("ubluna", Dec(amount))
 
     @property
-    def borrow_collateral_balance_uusd(self) -> coin.Coin:
-        return ubluna_to_uusd(self.lcd, self.borrow_collateral_balance_ubluna)
+    def total_collateral(self) -> coin.Coin:
+        return ubluna_to_uusd(self.lcd, self.total_collateral_ubluna)
 
     @property
-    def borrow_loan_principal(self) -> coin.Coin:
+    def total_borrowed(self) -> coin.Coin:
         amount = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
             {
@@ -127,7 +127,7 @@ class Anchor:
         return coin.Coin("uusd", amount)
 
     @property
-    def borrow_loan_principal_and_interest(self) -> coin.Coin:
+    def total_owing(self) -> coin.Coin:
         market_state = self.lcd.wasm.contract_query(
             CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
             {
@@ -165,21 +165,21 @@ class Anchor:
             current_block_height - market_state["last_interest_updated"]
         )
 
-        return self.borrow_loan_principal.mul(
+        return self.total_borrowed.mul(
             Dec(market_state["global_interest_index"]).mul(
                 borrow_rate.mul(blocks_since_interest_last_accrued).add(1)
             )
         ).div(borrower_interest_idx)
 
     @property
-    def borrow_loan_interest_charged(self) -> coin.Coin:
-        return self.borrow_loan_principal_and_interest.sub(self.borrow_loan_principal)
+    def interest_charged(self) -> coin.Coin:
+        return self.total_owing.sub(self.total_borrowed)
 
     @property
-    def borrow_ltv(self) -> float:
-        return (
-            self.borrow_loan_principal_and_interest.to_dec_coin().amount
-            / self.borrow_collateral_balance_uusd.to_dec_coin().amount
+    def ltv(self) -> float:
+        return float(
+            self.total_owing.to_dec_coin().amount
+            / self.total_collateral.to_dec_coin().amount
         )
 
     def __str__(self):
@@ -195,13 +195,16 @@ Anchor details for address: {self.account_address}
     {balance_str}
 
     Total deposit:
-    \t{coin_to_human_str(self.earn_balance_uaust)} ({coin_to_human_str(self.earn_balance_uusd)})
+    \t{coin_to_human_str(self.total_deposit_uaust)} ({coin_to_human_str(self.total_deposit)})
 
     Total collateral:
-    \t{coin_to_human_str(self.borrow_collateral_balance_ubluna)} ({coin_to_human_str(self.borrow_collateral_balance_uusd)})
+    \t{coin_to_human_str(self.total_collateral_ubluna)} ({coin_to_human_str(self.total_collateral)})
 
     Total owing:
-    \t{coin_to_human_str(self.borrow_loan_principal_and_interest)}
+    \t{coin_to_human_str(self.total_owing)}
+
+    Loan to value ratio:
+    \t{self.ltv:.2%}
 """
 
 
@@ -250,4 +253,6 @@ def coin_to_human_str(in_coin):
         "ubluna": "bLuna",
     }
 
-    return f"{float(Dec(in_coin.amount).div(1e6)):.4f} {DENOMS_TO_HUMAN[in_coin.denom]}"
+    return (
+        f"{float(Dec(in_coin.amount).div(1e6)):,.4f} {DENOMS_TO_HUMAN[in_coin.denom]}"
+    )

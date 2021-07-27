@@ -6,7 +6,7 @@ from terra_sdk.client import lcd
 import anchorpy
 
 if __name__ == "__main__":
-    CHAIN_ID = "columbus-4"
+    CHAIN_ID = "tequila-0004"
 
     HERE = pathlib.Path(__file__).parent.resolve()
     ROOT = HERE.parent
