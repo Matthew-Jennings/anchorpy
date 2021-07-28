@@ -8,7 +8,9 @@ from anchorpy import exchange
 
 if __name__ == "__main__":
     CHAIN_ID = "columbus-4"
-    LCD = lcd.LCDClient(chain_id=CHAIN_ID, url=anchorpy.PUBLIC_NODE_URLS[CHAIN_ID])
+    LCD = lcd.LCDClient(
+        chain_id=CHAIN_ID, url=anchorpy.settings.PUBLIC_NODE_URLS[CHAIN_ID]
+    )
 
     print(
         f"1 aUST = {anchorpy.coin_to_human_str(exchange.uaust_to_uusd(LCD, coin.Coin('uaust', 1e6)))}"

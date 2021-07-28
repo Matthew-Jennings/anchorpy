@@ -1,5 +1,4 @@
 import pathlib
-import pprint
 
 from terra_sdk.client import lcd
 from terra_sdk.core import coin, coins, Dec
@@ -34,17 +33,46 @@ def test_anchor():
 
 
 def test_withdraw_from_earn():
+
     anchor_test = anchorpy.Anchor(LCD_TEST, WALLET_TEST)
 
-    pprint.pprint(anchor_test.withdraw_uusd_from_earn(coin.Coin("uusd", 1e6)))
+    bank_balance_before = anchor_test.balance.get("uusd")
+    total_deposit_before = anchor_test.total_deposit
+
+    print(
+        # json.dumps(
+        #     anchor_test.withdraw_uusd_from_earn(coin.Coin("uusd", 1e4)).__dict__,
+        #     sort_keys=True,
+        #     indent=2,
+        # )
+        anchor_test.withdraw_uusd_from_earn(coin.Coin("uusd", 1e8))
+    )
+
+    bank_balance_after = anchor_test.balance.get("uusd")
+    total_deposit_after = anchor_test.total_deposit
+
+    total_removed_from_deposit = total_deposit_after.sub(total_deposit_before)
+    total_added_to_bank = bank_balance_after.sub(bank_balance_before)
+
+    implied_fees = total_removed_from_deposit.add(total_added_to_bank)
+    implied_fee_percent = float(
+        implied_fees.to_dec_coin().div(total_added_to_bank.to_dec_coin().amount).amount
+    )
+
+    print(
+        f"Total removed from deposit: {anchorpy.coin_to_human_str(total_removed_from_deposit)}"
+    )
+    print(f"Total added to bank: {anchorpy.coin_to_human_str(total_added_to_bank)}")
+    print(f"Implied fees: {implied_fees} ({anchorpy.coin_to_human_str(implied_fees)})")
+    print(f"Implied fee percent: {implied_fee_percent:.3%}")
 
 
 def test_ubluna_to_uusd():
     ubluna_coin_to_exchange = coin.Coin("ubluna", int(1e6))
 
-    uusd_received = anchorpy.ubluna_to_uusd(LCD_TEST, ubluna_coin_to_exchange)
+    uusd_received = anchorpy.exchange.ubluna_to_uusd(LCD_TEST, ubluna_coin_to_exchange)
 
-    pprint.pprint(uusd_received)
+    print(uusd_received)
 
 
 def test_okay_to_use_int_for_uluna():

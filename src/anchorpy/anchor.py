@@ -37,39 +37,78 @@ class Anchor:
     def total_deposit(self) -> coin.Coin:
         return exchange.uaust_to_uusd(self.lcd, self.total_deposit_uaust)
 
-    def withdraw_uusd_from_earn(self, uusd_to_withdraw: coin.Coin) -> coin.Coin:
-        fee_max = self.lcd.treasury.tax_cap("uusd").to_int_coin()
+    def withdraw_uusd_from_earn(
+        self, withdraw_amount_uusd: coin.Coin, add_buffer: bool = True
+    ) -> coin.Coin:
 
-        # print(fee_max)
-        # print()
+        BUFFER_MULTIPLIER = 1.0001  # is this enough?
 
-        withdraw_exec_msg = {
-            "send": {
-                "contract": settings.CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
-                "amount": str(int(uusd_to_withdraw.add(fee_max).amount)),
-                "msg": encode_hook_msg("redeem_stable"),
-            }
-        }
+        if add_buffer:
+            withdraw_amount_uusd = withdraw_amount_uusd.mul(BUFFER_MULTIPLIER)
 
-        # print(withdraw_exec_msg)
-        # print()
+        fee_estimate = self._estimate_withdraw_fee(withdraw_amount_uusd)
 
-        exec = (
+        tax_estimate = self.stability_fee(withdraw_amount_uusd)
+        print(f"\nStability fee: {tax_estimate}")
+
+        withdraw_amount_uusd_with_fees = withdraw_amount_uusd.add(
+            fee_estimate.amount.get("uusd")
+        ).add(tax_estimate)
+
+        withdraw_amount_aust_with_fees = exchange.uusd_to_uaust(
+            self.lcd, withdraw_amount_uusd_with_fees
+        )
+
+        exec_msg = (
             wasm.MsgExecuteContract(
                 sender=self.account_address,
                 contract=settings.CONTRACT_ADDRESSES[self.lcd.chain_id]["aTerra"],
-                execute_msg=withdraw_exec_msg,
+                execute_msg={
+                    "send": {
+                        "contract": settings.CONTRACT_ADDRESSES[self.lcd.chain_id][
+                            "mmMarket"
+                        ],
+                        "amount": str(int(withdraw_amount_aust_with_fees.amount)),
+                        "msg": encode_hook_msg("redeem_stable"),
+                    }
+                },
             ),
         )
 
-        # print(exec)
-        # print()
+        send_tx = self.wallet.create_and_sign_tx(
+            exec_msg,
+            fee=fee_estimate,
+        )
 
-        fee = str(int(fee_max.amount) + 250000) + "uusd"
-        sendtx = self.wallet.create_and_sign_tx(exec, fee=auth.StdFee(1000000, fee))
-        result = self.lcd.tx.broadcast(sendtx)
+        return self.lcd.tx.broadcast(send_tx)
 
-        return result
+    def _estimate_withdraw_fee(self, withdraw_amount_uusd):
+
+        withdraw_amount_aust = exchange.uusd_to_uaust(self.lcd, withdraw_amount_uusd)
+
+        exec_msg_nofee = (
+            wasm.MsgExecuteContract(
+                sender=self.account_address,
+                contract=settings.CONTRACT_ADDRESSES[self.lcd.chain_id]["aTerra"],
+                execute_msg={
+                    "send": {
+                        "contract": settings.CONTRACT_ADDRESSES[self.lcd.chain_id][
+                            "mmMarket"
+                        ],
+                        "amount": str(int(withdraw_amount_aust.amount)),
+                        "msg": encode_hook_msg("redeem_stable"),
+                    }
+                },
+            ),
+        )
+        send_tx_nofee = self.wallet.create_tx(exec_msg_nofee)
+
+        return self.lcd.tx.estimate_fee(
+            tx=send_tx_nofee,
+            gas_prices=settings.GAS_PRICES,
+            gas_adjustment=1.05,
+            fee_denoms=["uusd"],
+        )
 
     # Anchor Borrow
 
@@ -159,6 +198,17 @@ class Anchor:
             / self.total_collateral.to_dec_coin().amount
         )
 
+    def stability_fee(self, amount_coin):
+
+        tax_cap = self.lcd.treasury.tax_cap(amount_coin.denom)
+
+        tax_rate = self.lcd.treasury.tax_rate()
+        # Add 1 uusd to tax_uncapped to compensate for later
+        # flooring performed by to_int_coin()
+        tax_uncapped = amount_coin.mul(tax_rate).add(coin.Coin(amount_coin.denom, 1))
+
+        return min(tax_cap, tax_uncapped)
+
     def __str__(self):
 
         balance_str = "\n".join(
@@ -200,7 +250,6 @@ def coin_to_human_str(in_coin):
         "ubluna": "bLuna",
         "ukrw": "KRT",
         "usdr": "SDT",
-        "ubluna": "bLuna",
         "uanc": "ANC",
     }
 
