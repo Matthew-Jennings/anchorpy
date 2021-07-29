@@ -1,9 +1,13 @@
+import json
+import logging
 import pathlib
 
 from terra_sdk.client import lcd
 from terra_sdk.core import coin, coins, Dec
 
 import anchorpy
+
+log = logging.getLogger(__name__)
 
 HERE = pathlib.Path(__file__).parent.resolve()
 ROOT = HERE.parent
@@ -39,13 +43,9 @@ def test_withdraw_from_earn():
     bank_balance_before = anchor_test.balance.get("uusd")
     total_deposit_before = anchor_test.total_deposit
 
-    print(
-        # json.dumps(
-        #     anchor_test.withdraw_uusd_from_earn(coin.Coin("uusd", 1e4)).__dict__,
-        #     sort_keys=True,
-        #     indent=2,
-        # )
-        anchor_test.withdraw_uusd_from_earn(coin.Coin("uusd", 1e8))
+    log.debug(
+        "TXHASH: %s",
+        anchor_test.withdraw_uusd_from_earn(coin.Coin("uusd", 1.365e9)).txhash,
     )
 
     bank_balance_after = anchor_test.balance.get("uusd")
@@ -55,12 +55,26 @@ def test_withdraw_from_earn():
     total_added_to_bank = bank_balance_after.sub(bank_balance_before)
 
     implied_fees = total_removed_from_deposit.add(total_added_to_bank)
-    implied_fee_percent = float(
+    implied_fee_percent = 100 * float(
         implied_fees.to_dec_coin().div(total_added_to_bank.to_dec_coin().amount).amount
     )
 
-    print(
-        f"Total removed from deposit: {anchorpy.coin_to_human_str(total_removed_from_deposit)}"
+    log.debug(
+        "Total removed from deposit: %s (%s)",
+        total_removed_from_deposit,
+        anchorpy.coin_to_human_str(total_removed_from_deposit),
+    )
+
+    log.debug(
+        "Total added to bank: %s (%s)",
+        total_added_to_bank,
+        anchorpy.coin_to_human_str(total_added_to_bank),
+    )
+    log.debug(
+        "Implied fees: %s (%s)", implied_fees, anchorpy.coin_to_human_str(implied_fees)
+    )
+    log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
+
     )
     print(f"Total added to bank: {anchorpy.coin_to_human_str(total_added_to_bank)}")
     print(f"Implied fees: {implied_fees} ({anchorpy.coin_to_human_str(implied_fees)})")
@@ -72,7 +86,7 @@ def test_ubluna_to_uusd():
 
     uusd_received = anchorpy.exchange.ubluna_to_uusd(LCD_TEST, ubluna_coin_to_exchange)
 
-    print(uusd_received)
+    log.debug(uusd_received)
 
 
 def test_okay_to_use_int_for_uluna():
@@ -86,7 +100,3 @@ def test_okay_to_use_int_for_uluna():
     uusd_cents_per_uluna = uusd_per_uluna * 100
 
     assert uusd_cents_per_uluna > 1
-
-
-if __name__ == "__main__":
-    test_withdraw_from_earn()

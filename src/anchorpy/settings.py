@@ -1,6 +1,6 @@
 import requests
 
-from terra_sdk.core import coin, coins
+from terra_sdk.core import coins
 
 CONTRACT_ADDRESSES = {
     "columbus-4": {
@@ -62,11 +62,6 @@ CONTRACT_ADDRESSES = {
 PUBLIC_NODE_URLS = {
     "columbus-4": "https://lcd.terra.dev",
     "tequila-0004": "https://tequila-fcd.terra.dev",
-}
-
-ANCHOR_FIXED_GAS = {
-    "columbus-4": coin.Coin("uusd", 250000),
-    "tequila-0004": coin.Coin("uusd", 3500000),
 }
 
 GAS_PRICES = coins.Coins(requests.get("https://fcd.terra.dev/v1/txs/gas_prices").json())

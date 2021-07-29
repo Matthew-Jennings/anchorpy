@@ -1,9 +1,11 @@
-import base64
+import logging
 
 from terra_sdk.core import auth, coin, coins, Dec, wasm
 from terra_sdk.key import mnemonic
 
 from . import exchange, settings
+
+log = logging.getLogger(__name__)
 
 
 class Anchor:
@@ -38,26 +40,33 @@ class Anchor:
         return exchange.uaust_to_uusd(self.lcd, self.total_deposit_uaust)
 
     def withdraw_uusd_from_earn(
-        self, withdraw_amount_uusd: coin.Coin, add_buffer: bool = True
+        self, withdraw_amount_uusd: coin.Coin, receive_full_amount: bool = True
     ) -> coin.Coin:
 
-        BUFFER_MULTIPLIER = 1.0001  # is this enough?
+        withdraw_amount_uusd = withdraw_amount_uusd.to_int_coin()
+        log.debug("Withdraw amount uUST: %s", {withdraw_amount_uusd})
 
-        if add_buffer:
-            withdraw_amount_uusd = withdraw_amount_uusd.mul(BUFFER_MULTIPLIER)
+        if receive_full_amount:
+            # independent of `withdraw_amount_uusd`
+            gas_fees = self._estimate_withdraw_fee(withdraw_amount_uusd)
+            gas_fees_coin = gas_fees.amount.get("uusd")
+            log.debug("Gas fee estimate: %s", gas_fees)
 
-        fee_estimate = self._estimate_withdraw_fee(withdraw_amount_uusd)
+            # Tax is also applied to the gas portion of the fee buffer
+            tax = self.stability_fee(withdraw_amount_uusd.add(gas_fees_coin))
+            log.debug("Stability fee: %s", tax)
 
-        tax_estimate = self.stability_fee(withdraw_amount_uusd)
-        print(f"\nStability fee: {tax_estimate}")
+            fees = tax.add(gas_fees_coin)
 
-        withdraw_amount_uusd_with_fees = withdraw_amount_uusd.add(
-            fee_estimate.amount.get("uusd")
-        ).add(tax_estimate)
+            withdraw_msg_amount_uusd = withdraw_amount_uusd.add(fees)
+            log.debug("Withdraw amount to request (uUST): %s", withdraw_msg_amount_uusd)
+        else:
+            withdraw_msg_amount_uusd = withdraw_amount_uusd
 
-        withdraw_amount_aust_with_fees = exchange.uusd_to_uaust(
-            self.lcd, withdraw_amount_uusd_with_fees
+        withdraw_msg_amount_aust = exchange.uusd_to_uaust(
+            self.lcd, withdraw_msg_amount_uusd
         )
+        log.debug("Withdraw amount to request (in uaUST): %s", withdraw_msg_amount_aust)
 
         exec_msg = (
             wasm.MsgExecuteContract(
@@ -68,8 +77,8 @@ class Anchor:
                         "contract": settings.CONTRACT_ADDRESSES[self.lcd.chain_id][
                             "mmMarket"
                         ],
-                        "amount": str(int(withdraw_amount_aust_with_fees.amount)),
-                        "msg": encode_hook_msg("redeem_stable"),
+                        "amount": str(int(withdraw_msg_amount_aust.amount)),
+                        "msg": wasm.msgs.dict_to_b64({"redeem_stable": {}}),
                     }
                 },
             ),
@@ -77,14 +86,15 @@ class Anchor:
 
         send_tx = self.wallet.create_and_sign_tx(
             exec_msg,
-            fee=fee_estimate,
+            fee=gas_fees,
         )
 
-        return self.lcd.tx.broadcast(send_tx)
+        result = self.lcd.tx.broadcast(send_tx)
 
-    def _estimate_withdraw_fee(self, withdraw_amount_uusd):
+        return result
 
-        withdraw_amount_aust = exchange.uusd_to_uaust(self.lcd, withdraw_amount_uusd)
+
+    def _estimate_withdraw_fee(self, withdraw_amount_aust):
 
         exec_msg_nofee = (
             wasm.MsgExecuteContract(
@@ -96,7 +106,7 @@ class Anchor:
                             "mmMarket"
                         ],
                         "amount": str(int(withdraw_amount_aust.amount)),
-                        "msg": encode_hook_msg("redeem_stable"),
+                        "msg": wasm.msgs.dict_to_b64({"redeem_stable": {}}),
                     }
                 },
             ),
@@ -203,11 +213,9 @@ class Anchor:
         tax_cap = self.lcd.treasury.tax_cap(amount_coin.denom)
 
         tax_rate = self.lcd.treasury.tax_rate()
-        # Add 1 uusd to tax_uncapped to compensate for later
-        # flooring performed by to_int_coin()
-        tax_uncapped = amount_coin.mul(tax_rate).add(coin.Coin(amount_coin.denom, 1))
+        tax_uncapped = amount_coin.mul(tax_rate)
 
-        return min(tax_cap, tax_uncapped)
+        return min(tax_cap, tax_uncapped).to_int_coin()
 
     def __str__(self):
 
@@ -242,7 +250,7 @@ def mnem_key_from_file(mnem_fpath):
     return mnemonic.MnemonicKey(mnemonic=this_mnem)
 
 
-def coin_to_human_str(in_coin):
+def coin_to_human_str(in_coin, decimals=4):
     DENOMS_TO_HUMAN = {
         "uusd": "UST",
         "uaust": "aUST",
@@ -253,14 +261,4 @@ def coin_to_human_str(in_coin):
         "uanc": "ANC",
     }
 
-    return (
-        f"{float(Dec(in_coin.amount).div(1e6)):,.4f} {DENOMS_TO_HUMAN[in_coin.denom]}"
-    )
-
-
-def encode_hook_msg(key_str_to_encode):
-
-    # MUST have double quotes enclosing `key_str_to_encode`
-    msg_to_encode = f'{{"{key_str_to_encode}":{{}}}}'
-
-    return base64.b64encode(bytes(msg_to_encode, "utf-8")).decode("utf-8")
+    return f"{float(Dec(in_coin.amount).div(1e6)):,.{decimals}f} {DENOMS_TO_HUMAN[in_coin.denom]}"
