@@ -28,7 +28,9 @@ def uanc_to_uusd(lcd, offer_coin):
         )["return_amount"]
     ).div(1e6)
 
-    return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
+    return coin.Coin(
+        denom="uusd", amount=round_to_int_coin(offer_coin.mul(exchange_rate)).amount
+    )
 
 
 def uaust_to_uusd(lcd, offer_coin):
@@ -40,7 +42,9 @@ def uaust_to_uusd(lcd, offer_coin):
         settings.CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
     )["exchange_rate"]
 
-    return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
+    return coin.Coin(
+        denom="uusd", amount=round_to_int_coin(offer_coin.mul(exchange_rate)).amount
+    )
 
 
 def uusd_to_uaust(lcd, offer_coin):
@@ -52,7 +56,9 @@ def uusd_to_uaust(lcd, offer_coin):
         settings.CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
     )["exchange_rate"]
 
-    return coin.Coin(denom="uaust", amount=int(offer_coin.div(exchange_rate).amount))
+    return coin.Coin(
+        denom="uaust", amount=round_to_int_coin(offer_coin.mul(exchange_rate)).amount
+    )
 
 
 def ubluna_to_uusd(lcd, offer_coin):
@@ -70,4 +76,14 @@ def ubluna_to_uusd(lcd, offer_coin):
         },
     )["rate"]
 
-    return coin.Coin(denom="uusd", amount=int(offer_coin.mul(exchange_rate).amount))
+    return coin.Coin(
+        denom="uusd", amount=round_to_int_coin(offer_coin.mul(exchange_rate)).amount
+    )
+
+
+def round_to_int_coin(dec_coin):
+    return coin.Coin(dec_coin.denom, int(round(float(dec_coin.amount))))
+
+
+def ceil_to_int_coin(dec_coin):
+    return dec_coin.add(1).to_int_coin()
