@@ -57,7 +57,7 @@ def uusd_to_uaust(lcd, offer_coin):
     )["exchange_rate"]
 
     return coin.Coin(
-        denom="uaust", amount=round_to_int_coin(offer_coin.mul(exchange_rate)).amount
+        denom="uaust", amount=round_to_int_coin(offer_coin.div(exchange_rate)).amount
     )
 
 
