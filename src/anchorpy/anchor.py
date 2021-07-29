@@ -16,7 +16,7 @@ class Anchor:
 
     @property
     def balance(self) -> coins.Coins:
-        return self.lcd.bank.balance(address=self.account_address).to_dec_coins()
+        return self.lcd.bank.balance(address=self.account_address)
 
     # Anchor Earn
 
@@ -31,7 +31,7 @@ class Anchor:
             },
         )
 
-        return coin.Coin("uaust", result["balance"])
+        return coin.Coin("uaust", int(result["balance"]))
 
     @property
     def total_deposit(self) -> coin.Coin:
