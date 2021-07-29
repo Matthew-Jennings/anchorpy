@@ -42,9 +42,7 @@ def uaust_to_uusd(lcd, offer_coin):
         settings.CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
     )["exchange_rate"]
 
-    return coin.Coin(
-        denom="uusd", amount=offer_coin.mul(exchange_rate).to_int_coin().amount
-    )
+    return coin.Coin(denom="uusd", amount=offer_coin.mul(exchange_rate).amount)
 
 
 def uusd_to_uaust(lcd, offer_coin):
@@ -56,9 +54,7 @@ def uusd_to_uaust(lcd, offer_coin):
         settings.CONTRACT_ADDRESSES[lcd.chain_id]["mmMarket"], {"epoch_state": {}}
     )["exchange_rate"]
 
-    return coin.Coin(
-        denom="uaust", amount=offer_coin.div(exchange_rate).to_int_coin().amount
-    )
+    return coin.Coin(denom="uaust", amount=offer_coin.div(exchange_rate).amount)
 
 
 def ubluna_to_uusd(lcd, offer_coin):

@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import pathlib
 
 import pytest
@@ -55,79 +56,89 @@ def test_withdraw_from_earn(this_anchor):
     bank_balance_before = this_anchor.balance.get("uusd")
     total_deposit_before = this_anchor.total_deposit
 
+    WITHDRAW_AMOUNT = coin.Coin("uusd", 4e9)
+
     log.debug(
         "TXHASH: %s",
-        this_anchor.withdraw_uusd_from_earn(coin.Coin("uusd", 1.365e9)).txhash,
+        this_anchor.withdraw_uusd_from_earn(
+            WITHDRAW_AMOUNT, receive_full_amount=True
+        ).txhash,
     )
 
     bank_balance_after = this_anchor.balance.get("uusd")
     total_deposit_after = this_anchor.total_deposit
 
     total_removed_from_deposit = total_deposit_after.sub(total_deposit_before)
-    total_added_to_bank = bank_balance_after.sub(bank_balance_before)
-
-    implied_fees = total_removed_from_deposit.add(total_added_to_bank)
-    implied_fee_percent = 100 * float(
-        implied_fees.to_dec_coin().div(total_added_to_bank.to_dec_coin().amount).amount
-    )
-
     log.debug(
         "Total removed from deposit: %s (%s)",
         total_removed_from_deposit,
         anchorpy.coin_to_human_str(total_removed_from_deposit),
     )
 
+    total_added_to_bank = bank_balance_after.sub(bank_balance_before)
     log.debug(
         "Total added to bank: %s (%s)",
         total_added_to_bank,
         anchorpy.coin_to_human_str(total_added_to_bank),
     )
+
+    implied_fees = total_removed_from_deposit.add(total_added_to_bank)
     log.debug(
         "Implied fees: %s (%s)", implied_fees, anchorpy.coin_to_human_str(implied_fees)
     )
+    implied_fee_percent = 100 * float(
+        implied_fees.to_dec_coin().div(total_added_to_bank.to_dec_coin().amount).amount
+    )
     log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
+
+    assert total_added_to_bank >= WITHDRAW_AMOUNT
+    assert math.isclose(total_added_to_bank.amount, WITHDRAW_AMOUNT.amount, rel_tol=1e7)
 
 
 def test_deposit_from_earn(this_anchor):
+
+    DEPOSIT_AMOUNT = coin.Coin("uusd", 4e9)
 
     bank_balance_before = this_anchor.balance.get("uusd")
     total_deposit_before = this_anchor.total_deposit
 
     log.debug(
-        json.dumps(
-            eval(this_anchor.deposit_uusd_into_earn(coin.Coin("uusd", 5.4e9)).raw_log),
-            sort_keys=True,
-            indent=2,
-        )
+        "TXHASH: %s",
+        this_anchor.deposit_uusd_into_earn(DEPOSIT_AMOUNT).txhash,
     )
 
     bank_balance_after = this_anchor.balance.get("uusd")
     total_deposit_after = this_anchor.total_deposit
 
     total_added_to_deposit = total_deposit_after.sub(total_deposit_before)
-    total_removed_from_bank = bank_balance_after.sub(bank_balance_before)
-
-    implied_fees = total_added_to_deposit.add(total_removed_from_bank)
-    implied_fee_percent = 100 * float(
-        implied_fees.to_dec_coin()
-        .div(total_added_to_deposit.to_dec_coin().amount)
-        .amount
-    )
-
     log.debug(
         "Total added to deposit: %s (%s)",
-        total_added_to_deposit,
+        ,
         anchorpy.coin_to_human_str(total_added_to_deposit),
     )
+
+    total_removed_from_bank = bank_balance_after.sub(bank_balance_before)
     log.debug(
         "Total removed from bank: %s (%s)",
         total_removed_from_bank,
         anchorpy.coin_to_human_str(total_removed_from_bank),
     )
+
+    implied_fees = total_added_to_deposit.add(total_removed_from_bank)
     log.debug(
         "Implied fees: %s (%s)", implied_fees, anchorpy.coin_to_human_str(implied_fees)
     )
+
+    implied_fee_percent = 100 * float(
+        implied_fees.to_dec_coin()
+        .div(total_added_to_deposit.to_dec_coin().amount)
+        .amount
+    )
     log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
+
+
+    assert total_added_to_deposit >= DEPOSIT_AMOUNT
+    assert math.isclose(total_added_to_deposit.amount, DEPOSIT_AMOUNT.amount, rel_tol=1e7)
 
 
 def test_ubluna_to_uusd(this_lcd):

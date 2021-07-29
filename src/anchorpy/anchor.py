@@ -39,14 +39,22 @@ class Anchor:
     def total_deposit(self) -> coin.Coin:
         return exchange.uaust_to_uusd(self.lcd, self.total_deposit_uaust)
 
-    def deposit_uusd_into_earn(
-        self, deposit_amount_uusd: coin.Coin, add_buffer: bool = True
-    ) -> coin.Coin:
+    def deposit_uusd_into_earn(self, deposit_amount_uusd: coin.Coin) -> coin.Coin:
 
+        # TODO: implement `use_amouint_for_fees` option
+
+        # TODO: handle Dec coins (issues with string formatting)
         deposit_amount_uusd = deposit_amount_uusd.to_int_coin()
+        log.debug("Amount to deposit (uUST): %s", deposit_amount_uusd)
 
-        fee_estimate = self._estimate_deposit_fee(deposit_amount_uusd)
-        log.debug("Fee estimate: %s", fee_estimate)
+        gas_fees = self._estimate_deposit_fee(deposit_amount_uusd)
+        log.debug("Gas fee: %s", gas_fees)
+
+        tax = self.stability_fee(deposit_amount_uusd)
+        log.debug("Stability fee: %s", tax)
+
+        fees = auth.StdFee(gas_fees.gas, (gas_fees.amount.get("uusd").add(tax),))
+        log.debug("Fees: %s", fees)
 
         exec_msg = (
             wasm.MsgExecuteContract(
@@ -59,7 +67,7 @@ class Anchor:
 
         send_tx = self.wallet.create_and_sign_tx(
             exec_msg,
-            fee=fee_estimate,
+            fee=fees,
         )
 
         return self.lcd.tx.broadcast(send_tx)
@@ -77,26 +85,18 @@ class Anchor:
 
         send_tx_nofee = self.wallet.create_and_sign_tx(exec_msg_nofee)
 
-        gas_fee_estimate = self.lcd.tx.estimate_fee(
+        return self.lcd.tx.estimate_fee(
             tx=send_tx_nofee,
             gas_prices=settings.GAS_PRICES,
             gas_adjustment=1.05,
             fee_denoms=["uusd"],
         )
 
-        tax_estimate = self.stability_fee(deposit_amount_uusd)
-
-        fee_estimate = auth.StdFee(
-            gas_fee_estimate.gas,
-            (gas_fee_estimate.amount.get("uusd").add(tax_estimate).to_int_coin(),),
-        )
-
-        return fee_estimate
-
     def withdraw_uusd_from_earn(
         self, withdraw_amount_uusd: coin.Coin, receive_full_amount: bool = True
     ) -> coin.Coin:
 
+        # TODO: handle Dec coins (issues with string formatting)
         withdraw_amount_uusd = withdraw_amount_uusd.to_int_coin()
         log.debug("Withdraw amount uUST: %s", {withdraw_amount_uusd})
 
@@ -117,8 +117,8 @@ class Anchor:
         else:
             withdraw_msg_amount_uusd = withdraw_amount_uusd
 
-        withdraw_msg_amount_aust = exchange.uusd_to_uaust(
-            self.lcd, withdraw_msg_amount_uusd
+        withdraw_msg_amount_aust = exchange.ceil_to_int_coin(
+            exchange.uusd_to_uaust(self.lcd, withdraw_msg_amount_uusd)
         )
         log.debug("Withdraw amount to request (in uaUST): %s", withdraw_msg_amount_aust)
 
@@ -131,7 +131,7 @@ class Anchor:
                         "contract": settings.CONTRACT_ADDRESSES[self.lcd.chain_id][
                             "mmMarket"
                         ],
-                        "amount": str(int(withdraw_msg_amount_aust.amount)),
+                        "amount": str(withdraw_msg_amount_aust.amount),
                         "msg": wasm.msgs.dict_to_b64({"redeem_stable": {}}),
                     }
                 },
@@ -147,7 +147,11 @@ class Anchor:
 
         return result
 
-    def _estimate_withdraw_fee(self, withdraw_amount_aust):
+    def _estimate_withdraw_fee(self, withdraw_amount_uusd):
+
+        withdraw_amount_aust = exchange.ceil_to_int_coin(
+            exchange.uusd_to_uaust(self.lcd, withdraw_amount_uusd)
+        )
 
         exec_msg_nofee = (
             wasm.MsgExecuteContract(
@@ -158,7 +162,7 @@ class Anchor:
                         "contract": settings.CONTRACT_ADDRESSES[self.lcd.chain_id][
                             "mmMarket"
                         ],
-                        "amount": str(int(withdraw_amount_aust.amount)),
+                        "amount": str(withdraw_amount_aust.amount),
                         "msg": wasm.msgs.dict_to_b64({"redeem_stable": {}}),
                     }
                 },
@@ -169,7 +173,7 @@ class Anchor:
         return self.lcd.tx.estimate_fee(
             tx=send_tx_nofee,
             gas_prices=settings.GAS_PRICES,
-            gas_adjustment=1.05,
+            gas_adjustment=1.2,
             fee_denoms=["uusd"],
         )
 
