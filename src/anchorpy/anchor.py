@@ -40,8 +40,9 @@ class Anchor:
         return exchange.uaust_to_uusd(self.lcd, self.total_deposit_uaust)
 
     def deposit_uusd_into_earn(self, deposit_amount_uusd: coin.Coin) -> coin.Coin:
+        # deposit_amount_uusd must be > 1 aUST
 
-        # TODO: implement `use_amouint_for_fees` option
+        # TODO: implement `use_amount_for_fees` option
 
         # TODO: handle Dec coins (issues with string formatting)
         deposit_amount_uusd = deposit_amount_uusd.to_int_coin()

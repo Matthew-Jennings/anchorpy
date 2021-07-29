@@ -97,7 +97,7 @@ def test_withdraw_from_earn(this_anchor):
 
 def test_deposit_from_earn(this_anchor):
 
-    DEPOSIT_AMOUNT = coin.Coin("uusd", 4e9)
+    DEPOSIT_AMOUNT = coin.Coin("uusd", 2)
 
     bank_balance_before = this_anchor.balance.get("uusd")
     total_deposit_before = this_anchor.total_deposit
