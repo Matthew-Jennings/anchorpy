@@ -113,7 +113,7 @@ def test_deposit_from_earn(this_anchor):
     total_added_to_deposit = total_deposit_after.sub(total_deposit_before)
     log.debug(
         "Total added to deposit: %s (%s)",
-        ,
+        total_added_to_deposit,
         anchorpy.coin_to_human_str(total_added_to_deposit),
     )
 
@@ -136,9 +136,10 @@ def test_deposit_from_earn(this_anchor):
     )
     log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
-
     assert total_added_to_deposit >= DEPOSIT_AMOUNT
-    assert math.isclose(total_added_to_deposit.amount, DEPOSIT_AMOUNT.amount, rel_tol=1e7)
+    assert math.isclose(
+        total_added_to_deposit.amount, DEPOSIT_AMOUNT.amount, rel_tol=1e7
+    )
 
 
 def test_ubluna_to_uusd(this_lcd):
