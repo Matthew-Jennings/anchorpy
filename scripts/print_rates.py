@@ -7,7 +7,8 @@ import anchorpy
 from anchorpy import exchange
 
 if __name__ == "__main__":
-    CHAIN_ID = "columbus-4"
+    CHAIN_ID = "tequila-0004"
+    # CHAIN_ID = "columbus-4"
     LCD = lcd.LCDClient(
         chain_id=CHAIN_ID, url=anchorpy.settings.PUBLIC_NODE_URLS[CHAIN_ID]
     )
@@ -20,5 +21,4 @@ if __name__ == "__main__":
     )
     print(
         f"1 ANC = {anchorpy.coin_to_human_str(exchange.uanc_to_uusd(LCD, coin.Coin('uanc', 1e6)))}"
-        # anchorpy.uanc_to_uusd(LCD, coin.Coin("uanc", 1e6))
     )
