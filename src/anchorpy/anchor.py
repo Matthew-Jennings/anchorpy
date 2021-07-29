@@ -39,6 +39,60 @@ class Anchor:
     def total_deposit(self) -> coin.Coin:
         return exchange.uaust_to_uusd(self.lcd, self.total_deposit_uaust)
 
+    def deposit_uusd_into_earn(
+        self, deposit_amount_uusd: coin.Coin, add_buffer: bool = True
+    ) -> coin.Coin:
+
+        deposit_amount_uusd = deposit_amount_uusd.to_int_coin()
+
+        fee_estimate = self._estimate_deposit_fee(deposit_amount_uusd)
+        log.debug("Fee estimate: %s", fee_estimate)
+
+        exec_msg = (
+            wasm.MsgExecuteContract(
+                self.account_address,
+                contract=settings.CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
+                execute_msg={"deposit_stable": {}},
+                coins=coins.Coins((deposit_amount_uusd,)),
+            ),
+        )
+
+        send_tx = self.wallet.create_and_sign_tx(
+            exec_msg,
+            fee=fee_estimate,
+        )
+
+        return self.lcd.tx.broadcast(send_tx)
+
+    def _estimate_deposit_fee(self, deposit_amount_uusd):
+
+        exec_msg_nofee = (
+            wasm.MsgExecuteContract(
+                self.account_address,
+                contract=settings.CONTRACT_ADDRESSES[self.lcd.chain_id]["mmMarket"],
+                execute_msg={"deposit_stable": {}},
+                coins=coins.Coins((deposit_amount_uusd,)),
+            ),
+        )
+
+        send_tx_nofee = self.wallet.create_and_sign_tx(exec_msg_nofee)
+
+        gas_fee_estimate = self.lcd.tx.estimate_fee(
+            tx=send_tx_nofee,
+            gas_prices=settings.GAS_PRICES,
+            gas_adjustment=1.05,
+            fee_denoms=["uusd"],
+        )
+
+        tax_estimate = self.stability_fee(deposit_amount_uusd)
+
+        fee_estimate = auth.StdFee(
+            gas_fee_estimate.gas,
+            (gas_fee_estimate.amount.get("uusd").add(tax_estimate).to_int_coin(),),
+        )
+
+        return fee_estimate
+
     def withdraw_uusd_from_earn(
         self, withdraw_amount_uusd: coin.Coin, receive_full_amount: bool = True
     ) -> coin.Coin:
@@ -92,7 +146,6 @@ class Anchor:
         result = self.lcd.tx.broadcast(send_tx)
 
         return result
-
 
     def _estimate_withdraw_fee(self, withdraw_amount_aust):
 

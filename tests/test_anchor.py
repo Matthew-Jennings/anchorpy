@@ -75,10 +75,49 @@ def test_withdraw_from_earn():
     )
     log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
+
+def test_deposit_from_earn():
+
+    anchor_test = anchorpy.Anchor(LCD_TEST, WALLET_TEST)
+
+    bank_balance_before = anchor_test.balance.get("uusd")
+    total_deposit_before = anchor_test.total_deposit
+
+    log.debug(
+        json.dumps(
+            eval(anchor_test.deposit_uusd_into_earn(coin.Coin("uusd", 5.4e9)).raw_log),
+            sort_keys=True,
+            indent=2,
+        )
     )
-    print(f"Total added to bank: {anchorpy.coin_to_human_str(total_added_to_bank)}")
-    print(f"Implied fees: {implied_fees} ({anchorpy.coin_to_human_str(implied_fees)})")
-    print(f"Implied fee percent: {implied_fee_percent:.3%}")
+
+    bank_balance_after = anchor_test.balance.get("uusd")
+    total_deposit_after = anchor_test.total_deposit
+
+    total_added_to_deposit = total_deposit_after.sub(total_deposit_before)
+    total_removed_from_bank = bank_balance_after.sub(bank_balance_before)
+
+    implied_fees = total_added_to_deposit.add(total_removed_from_bank)
+    implied_fee_percent = 100 * float(
+        implied_fees.to_dec_coin()
+        .div(total_added_to_deposit.to_dec_coin().amount)
+        .amount
+    )
+
+    log.debug(
+        "Total added to deposit: %s (%s)",
+        total_added_to_deposit,
+        anchorpy.coin_to_human_str(total_added_to_deposit),
+    )
+    log.debug(
+        "Total removed from bank: %s (%s)",
+        total_removed_from_bank,
+        anchorpy.coin_to_human_str(total_removed_from_bank),
+    )
+    log.debug(
+        "Implied fees: %s (%s)", implied_fees, anchorpy.coin_to_human_str(implied_fees)
+    )
+    log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
 
 def test_ubluna_to_uusd():
