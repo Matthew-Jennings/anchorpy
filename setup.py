@@ -1,5 +1,13 @@
 from setuptools import setup
 
+test_deps = [
+    "black",
+    "pylint" "pytest",
+]
+extras = {
+    "test": test_deps,
+}
+
 setup(
     name="anchorpy",
     version="0.0.1",
@@ -15,4 +23,6 @@ setup(
     install_requires=[
         "terra_sdk",
     ],
+    tests_require=test_deps,
+    extras_require=extras,
 )
