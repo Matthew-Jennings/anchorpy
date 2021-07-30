@@ -19,6 +19,7 @@ classifiers = [
 python = "^3.7"
 requests = "^2.26.0"
 terra-sdk = "^0.14.0"
+mypy = "^0.910"
 
 [tool.poetry.dev-dependencies]
 black = "^21.7b0"
@@ -27,6 +28,7 @@ flake8 = "^3.9.2"
 pre-commit = "^2.13.0"
 pylint = "^2.9.6"
 pytest = "^6.2.4"
+types-requests = "^2.25.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
