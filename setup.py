@@ -1,4 +1,14 @@
+import re
 from setuptools import setup
+
+
+def get_version():
+    VERSION_FPATH = "src/anchorpy/_version.py"
+    ver_line = open(VERSION_FPATH, "rt").read()
+
+    VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
+    return re.search(VSRE, ver_line, re.M).group(1)
+
 
 test_deps = [
     "black",
@@ -11,7 +21,7 @@ extras = {
 
 setup(
     name="anchorpy",
-    version="0.0.1",
+    version=get_version(),
     author="Matthew-Jennings",
     author_email="Centrus.007@gmail.com",
     packages=["anchorpy"],
