@@ -12,11 +12,11 @@ if __name__ == "__main__":
     )
 
     print(
-        f"1 aUST = {anchorpy.coin_to_human_str(exchange.uaust_to_uusd(LCD, coin.Coin('uaust', 1e6)), decimals=8)}"
+        f"1 aUST = {anchorpy.coin_to_human_str(exchange.uaust_to_uusd(LCD, coin.Coin('uaust', 1e6)), decimals=8)}"  # noqa
     )
     print(
-        f"1 bLuna = {anchorpy.coin_to_human_str(exchange.ubluna_to_uusd(LCD, coin.Coin('ubluna', 1e6)), decimals=8)}"
+        f"1 bLuna = {anchorpy.coin_to_human_str(exchange.ubluna_to_uusd(LCD, coin.Coin('ubluna', 1e6)), decimals=8)}"  # noqa
     )
     print(
-        f"1 ANC = {anchorpy.coin_to_human_str(exchange.uanc_to_uusd(LCD, coin.Coin('uanc', 1e6)), decimals=8)}"
+        f"1 ANC = {anchorpy.coin_to_human_str(exchange.uanc_to_uusd(LCD, coin.Coin('uanc', 1e6)), decimals=8)}"  # noqa
     )

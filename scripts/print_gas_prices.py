@@ -1,6 +1,3 @@
-from terra_sdk.client import lcd
-from terra_sdk.core import coin, coins, Dec
-
 import anchorpy
 
 if __name__ == "__main__":

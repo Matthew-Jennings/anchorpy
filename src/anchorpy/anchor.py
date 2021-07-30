@@ -283,15 +283,17 @@ class Anchor:
 
         return f"""
 Anchor details for address: {self.account_address}
-    
+
     Bank balances:
     {balance_str}
 
     Total deposit:
-    \t{coin_to_human_str(self.total_deposit)} ({coin_to_human_str(self.total_deposit_uaust)})
+    \t{coin_to_human_str(self.total_deposit)} ({
+        coin_to_human_str(self.total_deposit_uaust)})
 
     Total collateral:
-    \t{coin_to_human_str(self.total_collateral)} ({coin_to_human_str(self.total_collateral_ubluna)})
+    \t{coin_to_human_str(self.total_collateral)} ({
+        coin_to_human_str(self.total_collateral_ubluna)})
 
     Total owing:
     \t{coin_to_human_str(self.total_owing)}
@@ -319,4 +321,7 @@ def coin_to_human_str(in_coin, decimals=4):
         "uanc": "ANC",
     }
 
-    return f"{float(Dec(in_coin.amount).div(1e6)):,.{decimals}f} {DENOMS_TO_HUMAN[in_coin.denom]}"
+    return (
+        f"{float(Dec(in_coin.amount).div(1e6)):,.{decimals}f} "
+        f"{DENOMS_TO_HUMAN[in_coin.denom]}"
+    )
