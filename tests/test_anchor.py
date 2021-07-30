@@ -11,6 +11,8 @@ import anchorpy
 
 log = logging.getLogger(__name__)
 
+CHAIN_ID_TESTNET = "tequila-0004"
+
 reason_no_test_wallet = "Awaiting setup of a suitable test wallet"
 is_in_github_actions = os.getenv("GITHUB_ACTIONS", "False").lower() in ("true", "1")
 
@@ -62,10 +64,10 @@ def test_anchor_getters(this_anchor):
 @pytest.mark.skipif(is_in_github_actions, reason=reason_no_test_wallet)
 def test_withdraw_from_earn(this_anchor):
 
+    WITHDRAW_AMOUNT = coin.Coin("uusd", 10)
+
     bank_balance_before = this_anchor.balance.get("uusd")
     total_deposit_before = this_anchor.total_deposit
-
-    WITHDRAW_AMOUNT = coin.Coin("uusd", 10)
 
     log.debug(
         "TXHASH: %s",
@@ -95,14 +97,20 @@ def test_withdraw_from_earn(this_anchor):
     log.debug(
         "Implied fees: %s (%s)", implied_fees, anchorpy.coin_to_human_str(implied_fees)
     )
+
+    if implied_fees.amount > 0:
     implied_fee_percent = 100 * float(
-        implied_fees.to_dec_coin().div(total_added_to_bank.to_dec_coin().amount).amount
+            implied_fees.to_dec_coin()
+            .div(total_added_to_bank.to_dec_coin().amount)
+            .amount
     )
     log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
     assert total_added_to_bank >= WITHDRAW_AMOUNT
     assert math.isclose(
-        total_added_to_bank.amount, WITHDRAW_AMOUNT.amount, rel_tol=1e-7
+        total_added_to_bank.amount,
+        WITHDRAW_AMOUNT.amount,
+        abs_tol=float(total_deposit_after.amount) * 1e-7,
     )
 
 
@@ -141,6 +149,7 @@ def test_deposit_from_earn(this_anchor):
         "Implied fees: %s (%s)", implied_fees, anchorpy.coin_to_human_str(implied_fees)
     )
 
+    if implied_fees.amount > 0:
     implied_fee_percent = 100 * float(
         implied_fees.to_dec_coin()
         .div(total_added_to_deposit.to_dec_coin().amount)
@@ -150,7 +159,9 @@ def test_deposit_from_earn(this_anchor):
 
     assert total_added_to_deposit >= DEPOSIT_AMOUNT
     assert math.isclose(
-        total_added_to_deposit.amount, DEPOSIT_AMOUNT.amount, rel_tol=1e-7
+        total_added_to_deposit.amount,
+        DEPOSIT_AMOUNT.amount,
+        abs_tol=float(total_deposit_before.amount) * 1e-7,
     )
 
 
