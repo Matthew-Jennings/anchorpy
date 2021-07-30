@@ -99,9 +99,7 @@ def test_withdraw_from_earn(this_anchor):
 
     if implied_fees.amount > 0:
     implied_fee_percent = 100 * float(
-            implied_fees.to_dec_coin()
-            .div(total_added_to_bank.to_dec_coin().amount)
-            .amount
+            implied_fees.div(total_added_to_bank.to_dec_coin().amount).amount
     )
     log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
@@ -150,9 +148,7 @@ def test_deposit_from_earn(this_anchor):
 
     if implied_fees.amount > 0:
     implied_fee_percent = 100 * float(
-        implied_fees.to_dec_coin()
-        .div(total_added_to_deposit.to_dec_coin().amount)
-        .amount
+            implied_fees.div(total_added_to_deposit.to_dec_coin().amount).amount
     )
     log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
