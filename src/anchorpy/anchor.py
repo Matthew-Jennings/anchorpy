@@ -89,7 +89,7 @@ class Anchor:
         return self.lcd.tx.estimate_fee(
             tx=send_tx_nofee,
             gas_prices=settings.GAS_PRICES,
-            gas_adjustment=1.05,
+            gas_adjustment=1.2,
             fee_denoms=["uusd"],
         )
 

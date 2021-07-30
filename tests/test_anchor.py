@@ -12,6 +12,7 @@ import anchorpy
 log = logging.getLogger(__name__)
 
 reason_no_test_wallet = "Awaiting setup of a suitable test wallet"
+is_in_github_actions = os.getenv("ENV_VAR", "False").lower() in ("true", "1")
 
 
 @pytest.fixture
@@ -25,7 +26,7 @@ def this_lcd():
 
 @pytest.fixture
 def this_wallet(this_lcd):
-    if os.environ["GITHUB_ACTIONS"]:
+    if is_in_github_actions:
         pytest.skip(reason=reason_no_test_wallet)
 
     HERE = pathlib.Path(__file__).parent.resolve()
@@ -37,7 +38,7 @@ def this_wallet(this_lcd):
 
 @pytest.fixture
 def this_anchor(this_lcd, this_wallet):
-    if os.environ["GITHUB_ACTIONS"]:
+    if is_in_github_actions:
         pytest.skip(reason=reason_no_test_wallet)
     return anchorpy.Anchor(this_lcd, this_wallet)
 
@@ -58,13 +59,13 @@ def test_anchor_getters(this_anchor):
     assert this_anchor.total_collateral_ubluna == BORROW_COLLATERAL_BALANCE_EXPECTED
 
 
-@pytest.mark.skipif(os.environ["GITHUB_ACTIONS"], reason_no_test_wallet)
+@pytest.mark.skipif(is_in_github_actions, reason=reason_no_test_wallet)
 def test_withdraw_from_earn(this_anchor):
 
     bank_balance_before = this_anchor.balance.get("uusd")
     total_deposit_before = this_anchor.total_deposit
 
-    WITHDRAW_AMOUNT = coin.Coin("uusd", 4e9)
+    WITHDRAW_AMOUNT = coin.Coin("uusd", 10)
 
     log.debug(
         "TXHASH: %s",
@@ -103,7 +104,7 @@ def test_withdraw_from_earn(this_anchor):
     assert math.isclose(total_added_to_bank.amount, WITHDRAW_AMOUNT.amount, rel_tol=1e7)
 
 
-@pytest.mark.skipif(os.environ["GITHUB_ACTIONS"], reason_no_test_wallet)
+@pytest.mark.skipif(is_in_github_actions, reason=reason_no_test_wallet)
 def test_deposit_from_earn(this_anchor):
 
     DEPOSIT_AMOUNT = coin.Coin("uusd", 2)
