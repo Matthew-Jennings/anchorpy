@@ -11,6 +11,9 @@ keywords = ["terra-money"]
 include = [
     "LICENSE",
 ]
+classifiers = [
+    "Operating System :: OS Independent",
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
