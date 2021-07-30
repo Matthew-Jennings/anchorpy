@@ -1,3 +1,25 @@
+[tool.poetry]
+name = "anchorpy"
+version = "0.1.0"
+description = "A python-based API for Anchor-Protocol."
+authors = ["Matthew Jennings <Centrus.007@gmail.com>"]
+readme="README.md"
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+terra-sdk = "*"
+requests = "*"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+pylint = "*"
+pytest = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.pytest.ini_options]
 log_cli = true
 log_cli_level = "DEBUG"

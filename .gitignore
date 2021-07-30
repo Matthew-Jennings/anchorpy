@@ -130,3 +130,5 @@ dmypy.json
 
 # anchorman
 mnemonic.txt
+poetry.lock
+git-rename.sh

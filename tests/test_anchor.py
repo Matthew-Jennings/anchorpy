@@ -101,13 +101,15 @@ def test_withdraw_from_earn(this_anchor):
     log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
     assert total_added_to_bank >= WITHDRAW_AMOUNT
-    assert math.isclose(total_added_to_bank.amount, WITHDRAW_AMOUNT.amount, rel_tol=1e7)
+    assert math.isclose(
+        total_added_to_bank.amount, WITHDRAW_AMOUNT.amount, rel_tol=1e-7
+    )
 
 
 @pytest.mark.skipif(is_in_github_actions, reason=reason_no_test_wallet)
 def test_deposit_from_earn(this_anchor):
 
-    DEPOSIT_AMOUNT = coin.Coin("uusd", 2)
+    DEPOSIT_AMOUNT = coin.Coin("uusd", 10)
 
     bank_balance_before = this_anchor.balance.get("uusd")
     total_deposit_before = this_anchor.total_deposit
@@ -148,7 +150,7 @@ def test_deposit_from_earn(this_anchor):
 
     assert total_added_to_deposit >= DEPOSIT_AMOUNT
     assert math.isclose(
-        total_added_to_deposit.amount, DEPOSIT_AMOUNT.amount, rel_tol=1e7
+        total_added_to_deposit.amount, DEPOSIT_AMOUNT.amount, rel_tol=1e-7
     )
 
 
