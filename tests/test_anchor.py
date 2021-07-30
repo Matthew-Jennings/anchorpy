@@ -19,7 +19,6 @@ is_in_github_actions = os.getenv("GITHUB_ACTIONS", "False").lower() in ("true", 
 
 @pytest.fixture
 def this_lcd():
-    CHAIN_ID_TESTNET = "tequila-0004"
     return lcd.LCDClient(
         chain_id=CHAIN_ID_TESTNET,
         url=anchorpy.settings.PUBLIC_NODE_URLS[CHAIN_ID_TESTNET],
