@@ -2,7 +2,8 @@ from setuptools import setup
 
 test_deps = [
     "black",
-    "pylint" "pytest",
+    "pylint",
+    "pytest",
 ]
 extras = {
     "test": test_deps,
