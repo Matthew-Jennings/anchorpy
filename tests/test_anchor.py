@@ -12,7 +12,7 @@ import anchorpy
 log = logging.getLogger(__name__)
 
 reason_no_test_wallet = "Awaiting setup of a suitable test wallet"
-is_in_github_actions = os.getenv("ENV_VAR", "False").lower() in ("true", "1")
+is_in_github_actions = os.getenv("GITHUB_ACTIONS", "False").lower() in ("true", "1")
 
 
 @pytest.fixture
