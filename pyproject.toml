@@ -5,6 +5,12 @@ description = "A python-based API for Anchor-Protocol."
 authors = ["Matthew Jennings <Centrus.007@gmail.com>"]
 readme="README.md"
 license = "Apache-2.0"
+homepage = "https://github.com/Matthew-Jennings/anchorpy"
+repository = "https://github.com/Matthew-Jennings/anchorpy"
+keywords = ["terra-money"]
+include = [
+    "LICENSE",
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
