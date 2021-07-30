@@ -21,9 +21,7 @@ setup(
     license="LICENSE.txt",
     description="",
     long_description=open("README.md").read(),
-    install_requires=[
-        "terra_sdk",
-    ],
+    install_requires=["terra_sdk", "requests"],
     tests_require=test_deps,
     extras_require=extras,
 )

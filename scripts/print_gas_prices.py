@@ -1,4 +1,3 @@
-from anchorpy import anchor
 from terra_sdk.client import lcd
 from terra_sdk.core import coin, coins, Dec
 
