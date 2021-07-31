@@ -3,7 +3,7 @@ import logging
 from terra_sdk.core import auth, coin, coins, Dec, wasm
 from terra_sdk.key import mnemonic
 
-from . import exchange, settings
+from . import exchange, helpers, settings
 
 log = logging.getLogger(__name__)
 
@@ -293,7 +293,7 @@ class Anchor:
     def __str__(self):
 
         balance_str = "\n".join(
-            ["\t{}".format(coin_to_human_str(coin)) for coin in self.balance]
+            ["\t{}".format(helpers.coin_to_human_str(coin)) for coin in self.balance]
         )
 
         return f"""
@@ -303,15 +303,15 @@ Anchor details for address: {self.account_address}
     {balance_str}
 
     Total deposit:
-    \t{coin_to_human_str(self.total_deposit)} ({
-        coin_to_human_str(self.total_deposit_uaust)})
+    \t{helpers.coin_to_human_str(self.total_deposit)} ({
+        helpers.coin_to_human_str(self.total_deposit_uaust)})
 
     Total collateral:
-    \t{coin_to_human_str(self.total_collateral)} ({
-        coin_to_human_str(self.total_collateral_ubluna)})
+    \t{helpers.coin_to_human_str(self.total_collateral)} ({
+        helpers.coin_to_human_str(self.total_collateral_ubluna)})
 
     Total owing:
-    \t{coin_to_human_str(self.total_owing)}
+    \t{helpers.coin_to_human_str(self.total_owing)}
 
     Loan to value ratio:
     \t{self.ltv:.2%}
@@ -323,20 +323,3 @@ def mnem_key_from_file(mnem_fpath):
         this_mnem = f.readline()
 
     return mnemonic.MnemonicKey(mnemonic=this_mnem)
-
-
-def coin_to_human_str(in_coin, decimals=4):
-    DENOMS_TO_HUMAN = {
-        "uusd": "UST",
-        "uaust": "aUST",
-        "uluna": "Luna",
-        "ubluna": "bLuna",
-        "ukrw": "KRT",
-        "usdr": "SDT",
-        "uanc": "ANC",
-    }
-
-    return (
-        f"{float(Dec(in_coin.amount).div(1e6)):,.{decimals}f} "
-        f"{DENOMS_TO_HUMAN[in_coin.denom]}"
-    )

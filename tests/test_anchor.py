@@ -63,39 +63,36 @@ def test_anchor_getters(this_anc):
 @pytest.mark.skipif(is_in_github_actions, reason=reason_no_test_wallet)
 def test_withdraw_from_earn(this_anc):
 
-    WITHDRAW_AMOUNT = coin.Coin("uusd", 10)
+    WITHDRAW_AMOUNT = coin.Coin("uusd", 1)
 
+    block_height_before = this_anc.block_height
     bank_balance_before = this_anc.balance.get("uusd")
     total_deposit_before = this_anc.total_deposit
 
-    log.debug(
-        "TXHASH: %s",
-        this_anc.withdraw_uusd_from_earn(
-            WITHDRAW_AMOUNT, receive_full_amount=True
-        ).txhash,
-    )
+    result = this_anc.withdraw_uusd_from_earn(WITHDRAW_AMOUNT, receive_full_amount=True)
+    log.debug("TXHASH: %s", result.txhash)
 
     bank_balance_after = this_anc.balance.get("uusd")
     total_deposit_after = this_anc.total_deposit
+    max_blocks_since_withdrawal_initiated = this_anc.block_height - block_height_before
+
+    # Withdraw amount is denominated in uaUST. This amount appreciates
+    # in value during the time between query msg construction and
+    # contract execution.
+    appreciation_adjustment = WITHDRAW_AMOUNT.mul(
+        this_anc.deposit_rate_per_block_at_last_epoch.mul(
+            max_blocks_since_withdrawal_initiated
+        )
+    )
 
     total_removed_from_deposit = total_deposit_after.sub(total_deposit_before)
-    log.debug(
-        "Total removed from deposit: %s (%s)",
-        total_removed_from_deposit,
-        anchorpy.coin_to_human_str(total_removed_from_deposit),
-    )
+    anchorpy.log_human_coin("Total removed from deposit", total_removed_from_deposit)
 
     total_added_to_bank = bank_balance_after.sub(bank_balance_before)
-    log.debug(
-        "Total added to bank: %s (%s)",
-        total_added_to_bank,
-        anchorpy.coin_to_human_str(total_added_to_bank),
-    )
+    anchorpy.log_human_coin("Total added to bank", total_added_to_bank)
 
     implied_fees = total_removed_from_deposit.add(total_added_to_bank)
-    log.debug(
-        "Implied fees: %s (%s)", implied_fees, anchorpy.coin_to_human_str(implied_fees)
-    )
+    anchorpy.log_human_coin("Implied fees", implied_fees)
 
     if implied_fees.amount > 0:
         implied_fee_percent = 100 * float(
@@ -103,11 +100,16 @@ def test_withdraw_from_earn(this_anc):
         )
         log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
+    # Should receive no less than WITHDRAW_AMOUNT in bank
     assert total_added_to_bank >= WITHDRAW_AMOUNT
+
+    # Actual received amount permitted to be greater than requested, but
+    # by no more than the calculated aUST adjustment (otherwise there's
+    # some other cause for increased actual withdrawal amount)
     assert math.isclose(
         total_added_to_bank.amount,
         WITHDRAW_AMOUNT.amount,
-        abs_tol=float(total_deposit_after.amount) * 1e-7,
+        abs_tol=appreciation_adjustment.amount,
     )
 
 
@@ -127,34 +129,31 @@ def test_deposit_from_earn(this_anc):
     total_deposit_after = this_anc.total_deposit
     max_blocks_since_deposit_initiated = this_anc.block_height - block_height_before
 
-    max_deposit_appreciation = total_deposit_after.mul(
+    # Total deposit is natively denominated in uaUST, which appreciates
+    # in value during the time between querying the deposit balance
+    # prior to making an additional deposit and querying the deposit
+    # balance afgter the deposit is completed. Note that this slightly
+    # differs from the related effect observed for withdrawals, as here
+    # the relevant value appreciation is that of the deposit balance,
+    # not the amount to deposit.
+    appreciation_adjustment = total_deposit_after.mul(
         this_anc.deposit_rate_per_block_at_last_epoch.mul(
             max_blocks_since_deposit_initiated
         )
     )
     log.debug(
         "Max increase in deposit value due to aUST appreciation: %s",
-        max_deposit_appreciation,
+        appreciation_adjustment,
     )
 
     total_added_to_deposit = total_deposit_after.sub(total_deposit_before)
-    log.debug(
-        "Total added to deposit: %s (%s)",
-        total_added_to_deposit,
-        anchorpy.coin_to_human_str(total_added_to_deposit),
-    )
+    anchorpy.log_human_coin("Total added to deposit", total_added_to_deposit)
 
     total_removed_from_bank = bank_balance_after.sub(bank_balance_before)
-    log.debug(
-        "Total removed from bank: %s (%s)",
-        total_removed_from_bank,
-        anchorpy.coin_to_human_str(total_removed_from_bank),
-    )
+    anchorpy.log_human_coin("Total removed from bank", total_removed_from_bank)
 
     implied_fees = total_added_to_deposit.add(total_removed_from_bank)
-    log.debug(
-        "Implied fees: %s (%s)", implied_fees, anchorpy.coin_to_human_str(implied_fees)
-    )
+    anchorpy.log_human_coin("Implied fees", implied_fees)
 
     if implied_fees.amount > 0:
         implied_fee_percent = 100 * float(
@@ -166,7 +165,7 @@ def test_deposit_from_earn(this_anc):
     assert math.isclose(
         total_added_to_deposit.amount,
         DEPOSIT_AMOUNT.amount,
-        abs_tol=max_deposit_appreciation.amount,
+        abs_tol=appreciation_adjustment.amount,
     )
 
 
