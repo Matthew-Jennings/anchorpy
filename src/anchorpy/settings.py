@@ -65,3 +65,8 @@ PUBLIC_NODE_URLS = {
 }
 
 GAS_PRICES = coins.Coins(requests.get("https://fcd.terra.dev/v1/txs/gas_prices").json())
+
+BLOCKS_PER_YEAR = {
+    "columbus-4": 4656810,
+    "tequila-0004": 4656810,
+}

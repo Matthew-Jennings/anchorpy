@@ -38,45 +38,45 @@ def this_wallet(this_lcd):
 
 
 @pytest.fixture
-def this_anchor(this_lcd, this_wallet):
+def this_anc(this_lcd, this_wallet):
     if is_in_github_actions:
         pytest.skip(reason=reason_no_test_wallet)
     return anchorpy.Anchor(this_lcd, this_wallet)
 
 
 @pytest.mark.skip(reason=reason_no_test_wallet)
-def test_anchor_getters(this_anchor):
+def test_anchor_getters(this_anc):
 
     BALANCE_EXPECTED = coins.Coins.from_str("3727582uluna,6489712uusd")
-    assert this_anchor.balance == BALANCE_EXPECTED
+    assert this_anc.balance == BALANCE_EXPECTED
 
     total_deposit_uaust_EXPECTED = coin.Coin("uaust", 1597783021)
-    assert this_anchor.total_deposit_uaust == total_deposit_uaust_EXPECTED
+    assert this_anc.total_deposit_uaust == total_deposit_uaust_EXPECTED
 
     EARN_BALANCE_UUSD_EXPECTED = coin.Coin("uusd", 1718938303)
-    assert this_anchor.total_deposit > EARN_BALANCE_UUSD_EXPECTED
+    assert this_anc.total_deposit > EARN_BALANCE_UUSD_EXPECTED
 
     BORROW_COLLATERAL_BALANCE_EXPECTED = coin.Coin("ubluna", Dec(358245650))
-    assert this_anchor.total_collateral_ubluna == BORROW_COLLATERAL_BALANCE_EXPECTED
+    assert this_anc.total_collateral_ubluna == BORROW_COLLATERAL_BALANCE_EXPECTED
 
 
 @pytest.mark.skipif(is_in_github_actions, reason=reason_no_test_wallet)
-def test_withdraw_from_earn(this_anchor):
+def test_withdraw_from_earn(this_anc):
 
     WITHDRAW_AMOUNT = coin.Coin("uusd", 10)
 
-    bank_balance_before = this_anchor.balance.get("uusd")
-    total_deposit_before = this_anchor.total_deposit
+    bank_balance_before = this_anc.balance.get("uusd")
+    total_deposit_before = this_anc.total_deposit
 
     log.debug(
         "TXHASH: %s",
-        this_anchor.withdraw_uusd_from_earn(
+        this_anc.withdraw_uusd_from_earn(
             WITHDRAW_AMOUNT, receive_full_amount=True
         ).txhash,
     )
 
-    bank_balance_after = this_anchor.balance.get("uusd")
-    total_deposit_after = this_anchor.total_deposit
+    bank_balance_after = this_anc.balance.get("uusd")
+    total_deposit_after = this_anc.total_deposit
 
     total_removed_from_deposit = total_deposit_after.sub(total_deposit_before)
     log.debug(
@@ -98,10 +98,10 @@ def test_withdraw_from_earn(this_anchor):
     )
 
     if implied_fees.amount > 0:
-    implied_fee_percent = 100 * float(
+        implied_fee_percent = 100 * float(
             implied_fees.div(total_added_to_bank.to_dec_coin().amount).amount
-    )
-    log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
+        )
+        log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
     assert total_added_to_bank >= WITHDRAW_AMOUNT
     assert math.isclose(
@@ -112,20 +112,30 @@ def test_withdraw_from_earn(this_anchor):
 
 
 @pytest.mark.skipif(is_in_github_actions, reason=reason_no_test_wallet)
-def test_deposit_from_earn(this_anchor):
+def test_deposit_from_earn(this_anc):
 
-    DEPOSIT_AMOUNT = coin.Coin("uusd", 10)
+    DEPOSIT_AMOUNT = coin.Coin("uusd", 2e9)
 
-    bank_balance_before = this_anchor.balance.get("uusd")
-    total_deposit_before = this_anchor.total_deposit
+    block_height_before = this_anc.block_height
+    bank_balance_before = this_anc.balance.get("uusd")
+    total_deposit_before = this_anc.total_deposit
 
-    log.debug(
-        "TXHASH: %s",
-        this_anchor.deposit_uusd_into_earn(DEPOSIT_AMOUNT).txhash,
+    result = this_anc.deposit_uusd_into_earn(DEPOSIT_AMOUNT)
+    log.debug("TXHASH: %s", result.txhash)
+
+    bank_balance_after = this_anc.balance.get("uusd")
+    total_deposit_after = this_anc.total_deposit
+    max_blocks_since_deposit_initiated = this_anc.block_height - block_height_before
+
+    max_deposit_appreciation = total_deposit_after.mul(
+        this_anc.deposit_rate_per_block_at_last_epoch.mul(
+            max_blocks_since_deposit_initiated
+        )
     )
-
-    bank_balance_after = this_anchor.balance.get("uusd")
-    total_deposit_after = this_anchor.total_deposit
+    log.debug(
+        "Max increase in deposit value due to aUST appreciation: %s",
+        max_deposit_appreciation,
+    )
 
     total_added_to_deposit = total_deposit_after.sub(total_deposit_before)
     log.debug(
@@ -147,16 +157,16 @@ def test_deposit_from_earn(this_anchor):
     )
 
     if implied_fees.amount > 0:
-    implied_fee_percent = 100 * float(
+        implied_fee_percent = 100 * float(
             implied_fees.div(total_added_to_deposit.to_dec_coin().amount).amount
-    )
-    log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
+        )
+        log.debug("Implied fee percent: %.3f%%", implied_fee_percent)
 
     assert total_added_to_deposit >= DEPOSIT_AMOUNT
     assert math.isclose(
         total_added_to_deposit.amount,
         DEPOSIT_AMOUNT.amount,
-        abs_tol=float(total_deposit_before.amount) * 1e-7,
+        abs_tol=max_deposit_appreciation.amount,
     )
 
 

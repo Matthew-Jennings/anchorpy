@@ -14,6 +14,10 @@ class Anchor:
         self.wallet = wallet
         self.account_address = wallet.key.acc_address
 
+    @property
+    def block_height(self):
+        return int(self.lcd.tendermint.block_info()["block"]["header"]["height"])
+
     # Wallet
 
     @property
@@ -48,7 +52,7 @@ class Anchor:
         deposit_amount_uusd = deposit_amount_uusd.to_int_coin()
         log.debug("Amount to deposit (uUST): %s", deposit_amount_uusd)
 
-        gas_fees = self._estimate_deposit_fee(deposit_amount_uusd)
+        gas_fees = self.estimate_deposit_fee(deposit_amount_uusd)
         log.debug("Gas fee: %s", gas_fees)
 
         tax = self.stability_fee(deposit_amount_uusd)
@@ -73,7 +77,7 @@ class Anchor:
 
         return self.lcd.tx.broadcast(send_tx)
 
-    def _estimate_deposit_fee(self, deposit_amount_uusd):
+    def estimate_deposit_fee(self, deposit_amount_uusd):
 
         exec_msg_nofee = (
             wasm.MsgExecuteContract(
@@ -103,7 +107,7 @@ class Anchor:
 
         if receive_full_amount:
             # independent of `withdraw_amount_uusd`
-            gas_fees = self._estimate_withdraw_fee(withdraw_amount_uusd)
+            gas_fees = self.estimate_withdraw_fee(withdraw_amount_uusd)
             gas_fees_coin = gas_fees.amount.get("uusd")
             log.debug("Gas fee estimate: %s", gas_fees)
 
@@ -148,7 +152,7 @@ class Anchor:
 
         return result
 
-    def _estimate_withdraw_fee(self, withdraw_amount_uusd):
+    def estimate_withdraw_fee(self, withdraw_amount_uusd):
 
         withdraw_amount_aust = exchange.ceil_to_int_coin(
             exchange.uusd_to_uaust(self.lcd, withdraw_amount_uusd)
@@ -176,6 +180,17 @@ class Anchor:
             gas_prices=settings.GAS_PRICES,
             gas_adjustment=1.2,
             fee_denoms=["uusd"],
+        )
+
+    @property
+    def deposit_rate_per_block_at_last_epoch(self):
+        return Dec(
+            self.lcd.wasm.contract_query(
+                contract_address=settings.CONTRACT_ADDRESSES[self.lcd.chain_id][
+                    "mmOverseer"
+                ],
+                query={"epoch_state": {}},
+            )["deposit_rate"]
         )
 
     # Anchor Borrow
